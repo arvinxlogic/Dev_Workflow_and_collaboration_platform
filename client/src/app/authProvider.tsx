@@ -22,25 +22,32 @@ const formFields = {
       inputProps: { required: true },
     },
     email: {
-      order: 1,
+      order: 2,
       placeholder: "Enter your email address",
       label: "Email",
       inputProps: { type: "email", required: true },
     },
-    password: {
+    name: { // Add this field
       order: 3,
+      placeholder: "Enter your full name",
+      label: "Full Name",
+      inputProps: { required: true },
+    },
+    password: {
+      order: 4,
       placeholder: "Enter your password",
       label: "Password",
       inputProps: { type: "password", required: true },
     },
     confirm_password: {
-      order: 4,
+      order: 5,
       placeholder: "Confirm your password",
       label: "Confirm Password",
       inputProps: { type: "password", required: true },
     },
   },
 };
+
 
 const AuthProvider = ({ children }: any) => {
   return (
