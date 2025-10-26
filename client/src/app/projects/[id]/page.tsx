@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from "react";
 import ProjectHeader from "@/app/projects/ProjectHeader";
 import Board from "../BoardView";
@@ -19,12 +18,10 @@ const Project = ({ params }: Props) => {
 
   return (
     <div>
-      <ModalNewTask
-        isOpen={isModalNewTaskOpen}
-        onClose={() => setIsModalNewTaskOpen(false)}
-        id={id}
-      />
+      {/* PROJECT HEADER */}
       <ProjectHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      {/* RENDER VIEW BASED ON ACTIVE TAB */}
       {activeTab === "Board" && (
         <Board id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
       )}
@@ -37,6 +34,12 @@ const Project = ({ params }: Props) => {
       {activeTab === "Table" && (
         <Table id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
       )}
+      
+      <ModalNewTask
+        isOpen={isModalNewTaskOpen}
+        onClose={() => setIsModalNewTaskOpen(false)}
+        id={id}
+      />
     </div>
   );
 };

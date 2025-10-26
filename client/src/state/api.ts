@@ -27,9 +27,8 @@ export enum Status {
 export interface User {
   userId?: number;
   username: string;
-  email: string;
-  profilePictureUrl?: string;
   cognitoId?: string;
+  profilePictureUrl?: string;
   teamId?: number;
 }
 
@@ -39,6 +38,14 @@ export interface Attachment {
   fileName: string;
   taskId: number;
   uploadedById: number;
+}
+
+export interface Comment {
+  id: number;
+  text: string;
+  taskId: number;
+  userId: number;
+  user?: User;
 }
 
 export interface Task {
@@ -54,7 +61,6 @@ export interface Task {
   projectId: number;
   authorUserId?: number;
   assignedUserId?: number;
-
   author?: User;
   assignee?: User;
   comments?: Comment[];
@@ -68,7 +74,7 @@ export interface SearchResults {
 }
 
 export interface Team {
-  teamId: number;
+  id: number;
   teamName: string;
   productOwnerUserId?: number;
   projectManagerUserId?: number;
@@ -87,8 +93,9 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["Projects", "Tasks", "Users", "Teams"],
+  tagTypes: ["Projects", "Tasks", "Users", "Teams", "Comments"],
   endpoints: (build) => ({
+    // Auth
     getAuthUser: build.query({
       queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
         try {
@@ -96,7 +103,6 @@ export const api = createApi({
           const session = await fetchAuthSession();
           if (!session) throw new Error("No session found");
           const { userSub } = session;
-          const { accessToken } = session.tokens ?? {};
 
           const userDetailsResponse = await fetchWithBQ(`users/${userSub}`);
           const userDetails = userDetailsResponse.data as User;
@@ -107,6 +113,8 @@ export const api = createApi({
         }
       },
     }),
+
+    // Projects
     getProjects: build.query<Project[], void>({
       query: () => "projects",
       providesTags: ["Projects"],
@@ -119,6 +127,26 @@ export const api = createApi({
       }),
       invalidatesTags: ["Projects"],
     }),
+    updateProject: build.mutation<
+      Project,
+      { projectId: number; data: Partial<Project> }
+    >({
+      query: ({ projectId, data }) => ({
+        url: `projects/${projectId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+    deleteProject: build.mutation<{ message: string }, number>({
+      query: (projectId) => ({
+        url: `projects/${projectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+
+    // Tasks
     getTasks: build.query<Task[], { projectId: number }>({
       query: ({ projectId }) => `tasks?projectId=${projectId}`,
       providesTags: (result) =>
@@ -130,8 +158,8 @@ export const api = createApi({
       query: (userId) => `tasks/user/${userId}`,
       providesTags: (result, error, userId) =>
         result
-          ? result.map(({ id }) => ({ type: "Tasks", id }))
-          : [{ type: "Tasks", id: userId }],
+          ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
+          : [{ type: "Tasks" as const, id: userId }],
     }),
     createTask: build.mutation<Task, Partial<Task>>({
       query: (task) => ({
@@ -140,6 +168,16 @@ export const api = createApi({
         body: task,
       }),
       invalidatesTags: ["Tasks"],
+    }),
+    updateTask: build.mutation<Task, { taskId: number; data: Partial<Task> }>({
+      query: ({ taskId, data }) => ({
+        url: `tasks/${taskId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
     }),
     updateTaskStatus: build.mutation<Task, { taskId: number; status: string }>({
       query: ({ taskId, status }) => ({
@@ -151,29 +189,90 @@ export const api = createApi({
         { type: "Tasks", id: taskId },
       ],
     }),
+    deleteTask: build.mutation<{ message: string }, number>({
+      query: (taskId) => ({
+        url: `tasks/${taskId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Tasks"],
+    }),
+
+    // Comments
+    getTaskComments: build.query<Comment[], number>({
+      query: (taskId) => `tasks/${taskId}/comments`,
+      providesTags: (result, error, taskId) => [
+        { type: "Comments", id: taskId },
+      ],
+    }),
+    createComment: build.mutation<
+      Comment,
+      { text: string; taskId: number; userId: number }
+    >({
+      query: (comment) => ({
+        url: "tasks/comments",
+        method: "POST",
+        body: comment,
+      }),
+      invalidatesTags: (result, error, { taskId }) => [
+        { type: "Comments", id: taskId },
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+
+    // Search
+    search: build.query<SearchResults, string>({
+      query: (query) => `search?query=${query}`,
+    }),
+
+    // Users
     getUsers: build.query<User[], void>({
       query: () => "users",
       providesTags: ["Users"],
     }),
+    updateUser: build.mutation<
+      User,
+      { userId: number; data: Partial<User> }
+    >({
+      query: ({ userId, data }) => ({
+        url: `users/${userId}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Users"],
+    }),
+    deleteUser: build.mutation<{ message: string }, number>({
+      query: (userId) => ({
+        url: `users/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Users"],
+    }),
+
+    // Teams
     getTeams: build.query<Team[], void>({
       query: () => "teams",
       providesTags: ["Teams"],
-    }),
-    search: build.query<SearchResults, string>({
-      query: (query) => `search?query=${query}`,
     }),
   }),
 });
 
 export const {
+  useGetAuthUserQuery,
   useGetProjectsQuery,
   useCreateProjectMutation,
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
   useGetTasksQuery,
+  useGetTasksByUserQuery,
   useCreateTaskMutation,
+  useUpdateTaskMutation,
   useUpdateTaskStatusMutation,
+  useDeleteTaskMutation,
+  useGetTaskCommentsQuery,
+  useCreateCommentMutation,
   useSearchQuery,
   useGetUsersQuery,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
   useGetTeamsQuery,
-  useGetTasksByUserQuery,
-  useGetAuthUserQuery,
 } = api;

@@ -1,24 +1,24 @@
 [
   {
-    "username": "AliceJones",
+    "username": "AliceJatt",
     "teamId": 1,
     "profilePictureUrl": "p1.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174001"
   },
   {
-    "username": "BobSmith",
+    "username": "BobJatt",
     "teamId": 2,
     "profilePictureUrl": "p2.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174002"
   },
   {
-    "username": "CarolWhite",
+    "username": "CarolSandhu",
     "teamId": 3,
     "profilePictureUrl": "p3.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174003"
   },
   {
-    "username": "DaveBrown",
+    "username": "DaveSingh",
     "teamId": 4,
     "profilePictureUrl": "p4.jpeg",
     "cognitoId": "213b7530-1031-70e0-67e9-fe0805e18fb3"
@@ -30,7 +30,7 @@
     "cognitoId": "123e4567-e89b-12d3-a456-426614174005"
   },
   {
-    "username": "FrankWright",
+    "username": "BlackFrank",
     "teamId": 1,
     "profilePictureUrl": "p6.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174006"
@@ -48,7 +48,7 @@
     "cognitoId": "123e4567-e89b-12d3-a456-426614174008"
   },
   {
-    "username": "IdaMartin",
+    "username": "MarkSingh",
     "teamId": 4,
     "profilePictureUrl": "p9.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174009"
@@ -60,13 +60,13 @@
     "cognitoId": "123e4567-e89b-12d3-a456-426614174010"
   },
   {
-    "username": "LauraAdams",
+    "username": "LaurAdams",
     "teamId": 1,
     "profilePictureUrl": "p11.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174011"
   },
   {
-    "username": "NormanBates",
+    "username": "DoeJohn",
     "teamId": 2,
     "profilePictureUrl": "p12.jpeg",
     "cognitoId": "123e4567-e89b-12d3-a456-426614174012"

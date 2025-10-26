@@ -1,21 +1,21 @@
 [
   {
     "id": 1,
-    "name": "Apollo",
+    "name": "MachineLearning",
     "description": "A space exploration project.",
     "startDate": "2023-01-01T00:00:00Z",
     "endDate": "2023-12-31T00:00:00Z"
   },
   {
     "id": 2,
-    "name": "Beacon",
+    "name": "Sigma",
     "description": "Developing advanced navigation systems.",
     "startDate": "2023-02-01T00:00:00Z",
     "endDate": "2023-10-15T00:00:00Z"
   },
   {
     "id": 3,
-    "name": "Catalyst",
+    "name": "EDucate",
     "description": "A project to boost renewable energy use.",
     "startDate": "2023-03-05T00:00:00Z",
     "endDate": "2024-03-05T00:00:00Z"
@@ -29,14 +29,14 @@
   },
   {
     "id": 5,
-    "name": "Echo",
+    "name": "Mobile",
     "description": "Echo project focused on AI advancements.",
     "startDate": "2023-04-15T00:00:00Z",
     "endDate": "2023-11-30T00:00:00Z"
   },
   {
     "id": 6,
-    "name": "Foxtrot",
+    "name": "ForestWeb",
     "description": "Exploring cutting-edge biotechnology.",
     "startDate": "2023-02-25T00:00:00Z",
     "endDate": "2023-08-25T00:00:00Z"
@@ -64,7 +64,7 @@
   },
   {
     "id": 10,
-    "name": "Juliet",
+    "name": "Platform",
     "description": "Initiative to enhance cyber-security measures.",
     "startDate": "2023-07-01T00:00:00Z",
     "endDate": "2024-02-01T00:00:00Z"
