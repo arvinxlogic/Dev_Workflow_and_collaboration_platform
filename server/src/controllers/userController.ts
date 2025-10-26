@@ -31,7 +31,7 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const postUser = async (req: Request, res: Response) => {
+export const postUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       username,
@@ -51,6 +51,46 @@ export const postUser = async (req: Request, res: Response) => {
   } catch (error: any) {
     res
       .status(500)
-      .json({ message: `Error retrieving users: ${error.message}` });
+      .json({ message: `Error creating user: ${error.message}` });
+  }
+};
+
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
+  const { userId } = req.params;
+  const { username, profilePictureUrl, teamId } = req.body;
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: {
+        userId: Number(userId),
+      },
+      data: {
+        ...(username && { username }),
+        ...(profilePictureUrl && { profilePictureUrl }),
+        ...(teamId !== undefined && { teamId }),
+      },
+    });
+    res.json(updatedUser);
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error updating user: ${error.message}` });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  const { userId } = req.params;
+
+  try {
+    await prisma.user.delete({
+      where: {
+        userId: Number(userId),
+      },
+    });
+    res.json({ message: "User deleted successfully" });
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error deleting user: ${error.message}` });
   }
 };

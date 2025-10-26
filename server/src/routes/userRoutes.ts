@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
-  getUser,
   getUsers,
+  getUser,
   postUser,
   updateUser,
   deleteUser,
@@ -10,8 +10,8 @@ import {
 const router = Router();
 
 router.get("/", getUsers);
-router.post("/", postUser);
 router.get("/:cognitoId", getUser);
+router.post("/", postUser);
 router.patch("/:userId", updateUser);
 router.delete("/:userId", deleteUser);
 
