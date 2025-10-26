@@ -9,18 +9,22 @@ type Props = {
 const UserCard = ({ user }: Props) => {
   return (
     <div className="flex items-center rounded border p-4 shadow">
-      {user.profilePictureUrl && (
+      {user.profilePictureUrl ? (
         <Image
-          src={`https://pm-s3-images-neqw.s3.eu-north-1.amazonaws.com/p1.jpeg`}
-          alt="profile picture"
+          src={`/${user.profilePictureUrl}`}
+          alt={user.username}
           width={32}
           height={32}
           className="rounded-full"
         />
+      ) : (
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white">
+          {user.username[0].toUpperCase()}
+        </div>
       )}
-      <div>
-        <h3>{user.username}</h3>
-        <p>{user.email}</p>
+      <div className="ml-4">
+        <h3 className="font-semibold">{user.username}</h3>
+        <p className="text-sm text-gray-500">Team ID: {user.teamId || "None"}</p>
       </div>
     </div>
   );
