@@ -22,13 +22,14 @@ export const createProject = async (
   res: Response
 ): Promise<void> => {
   const { name, description, startDate, endDate } = req.body;
+
   try {
     const newProject = await prisma.project.create({
       data: {
         name,
         description,
-        startDate,
-        endDate,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
       },
     });
     res.status(201).json(newProject);
@@ -36,5 +37,82 @@ export const createProject = async (
     res
       .status(500)
       .json({ message: `Error creating a project: ${error.message}` });
+  }
+};
+
+export const updateProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { projectId } = req.params;
+  const { name, description, startDate, endDate } = req.body;
+
+  try {
+    const updatedProject = await prisma.project.update({
+      where: {
+        id: Number(projectId),
+      },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(startDate && { startDate: new Date(startDate) }),
+        ...(endDate && { endDate: new Date(endDate) }),
+      },
+    });
+    res.json(updatedProject);
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error updating project: ${error.message}` });
+  }
+};
+
+export const deleteProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { projectId } = req.params;
+
+  try {
+    // Get all tasks for this project
+    const tasks = await prisma.task.findMany({
+      where: { projectId: Number(projectId) },
+    });
+
+    // Delete all related records for each task
+    for (const task of tasks) {
+      await prisma.comment.deleteMany({
+        where: { taskId: task.id },
+      });
+      await prisma.attachment.deleteMany({
+        where: { taskId: task.id },
+      });
+      await prisma.taskAssignment.deleteMany({
+        where: { taskId: task.id },
+      });
+    }
+
+    // Delete all tasks
+    await prisma.task.deleteMany({
+      where: { projectId: Number(projectId) },
+    });
+
+    // Delete project teams
+    await prisma.projectTeam.deleteMany({
+      where: { projectId: Number(projectId) },
+    });
+
+    // Delete the project
+    await prisma.project.delete({
+      where: {
+        id: Number(projectId),
+      },
+    });
+
+    res.json({ message: "Project deleted successfully" });
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error deleting project: ${error.message}` });
   }
 };
