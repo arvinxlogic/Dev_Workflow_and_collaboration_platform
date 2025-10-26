@@ -21,8 +21,7 @@ body,
 
 /* TIMELINE STYLING */
 .timeline ._3_ygE {
-  @apply rounded-tl-md border border-r-0 border-[#e6e4e4] dark:border-stroke-dark;
-}
+@apply rounded-tl-md border border-r-0 border-[#e6e4e4] dark:border-gray-700;}
 .timeline ._2eZzQ {
   @apply border-[#e6e4e4] dark:border-stroke-dark;
 }
