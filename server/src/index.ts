@@ -21,15 +21,16 @@ app.use(morgan("common"));
 
 // 2. CORS CONFIGURATION (MUST be before helmet)
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
+  origin: 
+  // [
+    // 'http://localhost:3000',
     'https://main.dbfnxdceymc08.amplifyapp.com',
-    'https://t4zf9qe6xf.execute-api.eu-north-1.amazonaws.com'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  // ],
+  // 'https://t4zf9qe6xf.execute-api.eu-north-1.amazonaws.com'
+  // methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  // allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 204
+  // optionsSuccessStatus: 204
 }));
 
 // 3. Handle preflight OPTIONS requests
