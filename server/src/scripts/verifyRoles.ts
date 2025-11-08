@@ -1,44 +1,41 @@
-import { config } from "dotenv";
-import { PrismaClient } from "@prisma/client";
-
-// Load environment variables from .env file
-config();
+import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function verifyRoles() {
-  console.log("🔍 Verifying user roles...\n");
+  console.log('🔍 Verifying user roles in database...\n');
 
-  const users = await prisma.user.findMany({
-    select: {
-      username: true,
-      role: true,
-      isActive: true,
-      cognitoId: true,
-    },
-  });
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        userId: true,
+        username: true,
+        role: true,
+        isActive: true,
+      },
+    });
 
-  console.log("📊 Users by Role:\n");
-  
-  const roleGroups = users.reduce((acc, user) => {
-    if (!acc[user.role]) acc[user.role] = [];
-    acc[user.role].push(user.username);
-    return acc;
-  }, {} as Record<string, string[]>);
+    console.log(`📊 Found ${users.length} users:\n`);
 
-  Object.entries(roleGroups).forEach(([role, usernames]) => {
-    console.log(`${role}:`);
-    usernames.forEach(name => console.log(`  - ${name}`));
-    console.log();
-  });
+    // Group by role
+    const roleGroups = users.reduce((acc, user) => {
+      const role = user.role || 'MEMBER'; // Default to MEMBER if null
+      if (!acc[role]) acc[role] = [];
+      acc[role].push(user.username);
+      return acc;
+    }, {} as Record<string, string[]>);
 
-  const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-  console.log(`✅ Total Admins: ${adminCount}`);
-  
-  await prisma.$disconnect();
+    // Display by role
+    Object.entries(roleGroups).forEach(([role, usernames]) => {
+      console.log(`  ${role}: ${usernames.join(', ')}`);
+    });
+
+    console.log('\n✅ Role verification complete!');
+  } catch (error) {
+    console.error('❌ Error verifying roles:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-verifyRoles().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+verifyRoles();

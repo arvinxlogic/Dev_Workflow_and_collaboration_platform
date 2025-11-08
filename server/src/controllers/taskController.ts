@@ -12,7 +12,7 @@ export const getTasks = async (req: Request, res: Response): Promise<void> => {
       },
       include: {
         author: true,
-        assignee: true,
+        // assignedTo: true,
         comments: {
           include: {
             user: true,
@@ -67,7 +67,7 @@ export const createTask = async (
       },
       include: {
         author: true,
-        assignee: true,
+        // assignedTo: true,
       },
     });
     res.status(201).json(newTask);
@@ -115,7 +115,7 @@ export const updateTask = async (
       },
       include: {
         author: true,
-        assignee: true,
+        // assignedTo: true,
         comments: {
           include: {
             user: true,
@@ -146,7 +146,7 @@ export const updateTaskStatus = async (
       },
       include: {
         author: true,
-        assignee: true,
+        // assignedTo: true,
       },
     });
     res.json(updatedTask);
@@ -203,7 +203,7 @@ export const getUserTasks = async (
       },
       include: {
         author: true,
-        assignee: true,
+        // assignedTo: true,
         project: true,
       },
     });

@@ -1,18 +1,19 @@
 import { Router } from "express";
-import {
-  getUsers,
-  getUser,
-  postUser,
-  updateUser,
-  deleteUser,
-} from "../controllers/userController";
+import { getUser, getUsers, postUser } from "../controllers/userController";
+import { authenticateToken, requireAdmin } from "../middleware/authMiddleware";
 
 const router = Router();
 
-router.get("/", getUsers);
-router.get("/:cognitoId", getUser);
+// Public route - for user registration
 router.post("/", postUser);
-router.patch("/:userId", updateUser);
-router.delete("/:userId", deleteUser);
+
+// Protected routes
+router.use(authenticateToken);
+
+// Anyone authenticated can get users list
+router.get("/", getUsers);
+
+// Anyone authenticated can get their own user info
+router.get("/:cognitoId", getUser);
 
 export default router;
