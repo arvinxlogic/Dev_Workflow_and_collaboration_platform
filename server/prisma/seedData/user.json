@@ -1,122 +1,98 @@
 [
   {
-    "username": "AliceJatt",
+    "username": "RajeshKumar",
     "teamId": 1,
     "profilePictureUrl": "p1.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174001"
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174001",
+    "role": "ADMIN",
+    "isActive": true
   },
   {
-    "username": "BobJatt",
-    "teamId": 2,
-    "profilePictureUrl": "p2.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174002"
-  },
-  {
-    "username": "CarolSandhu",
-    "teamId": 3,
-    "profilePictureUrl": "p3.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174003"
-  },
-  {
-    "username": "DaveSingh",
-    "teamId": 4,
-    "profilePictureUrl": "p4.jpeg",
-    "cognitoId": "213b7530-1031-70e0-67e9-fe0805e18fb3"
-  },
-  {
-    "username": "EveClark",
-    "teamId": 5,
-    "profilePictureUrl": "p5.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174005"
-  },
-  {
-    "username": "BlackFrank",
+    "username": "PriyaSharma",
     "teamId": 1,
-    "profilePictureUrl": "p6.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174006"
+    "profilePictureUrl": "p2.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174002",
+    "role": "PROJECT_MANAGER",
+    "isActive": true
   },
   {
-    "username": "GraceHall",
+    "username": "AmitPatel",
     "teamId": 2,
-    "profilePictureUrl": "p7.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174007"
+    "profilePictureUrl": "p3.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174003",
+    "role": "TEAM_LEAD",
+    "isActive": true
   },
   {
-    "username": "HenryAllen",
+    "username": "SnehaReddy",
+    "teamId": 2,
+    "profilePictureUrl": "p4.jpeg",
+    "cognitoId": "213b7530-1031-70e0-67e9-fe0805e18fb3",
+    "role": "MEMBER",
+    "isActive": true
+  },
+  {
+    "username": "VikramSingh",
     "teamId": 3,
-    "profilePictureUrl": "p8.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174008"
+    "profilePictureUrl": "p5.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174005",
+    "role": "PROJECT_MANAGER",
+    "isActive": true
   },
   {
-    "username": "MarkSingh",
+    "username": "AnanyaIyer",
+    "teamId": 3,
+    "profilePictureUrl": "p6.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174006",
+    "role": "TEAM_LEAD",
+    "isActive": true
+  },
+  {
+    "username": "KaranMehta",
     "teamId": 4,
-    "profilePictureUrl": "p9.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174009"
+    "profilePictureUrl": "p7.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174007",
+    "role": "MEMBER",
+    "isActive": true
   },
   {
-    "username": "JohnDoe",
+    "username": "NehaNair",
+    "teamId": 4,
+    "profilePictureUrl": "p8.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174008",
+    "role": "MEMBER",
+    "isActive": true
+  },
+  {
+    "username": "RohitGupta",
+    "teamId": 5,
+    "profilePictureUrl": "p9.jpeg",
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174009",
+    "role": "TEAM_LEAD",
+    "isActive": true
+  },
+  {
+    "username": "DivyaKrishnan",
     "teamId": 5,
     "profilePictureUrl": "p10.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174010"
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174010",
+    "role": "MEMBER",
+    "isActive": true
   },
   {
-    "username": "LaurAdams",
+    "username": "ArjunVerma",
     "teamId": 1,
     "profilePictureUrl": "p11.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174011"
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174011",
+    "role": "MEMBER",
+    "isActive": true
   },
   {
-    "username": "DoeJohn",
+    "username": "KavyaSingh",
     "teamId": 2,
     "profilePictureUrl": "p12.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174012"
-  },
-  {
-    "username": "OliviaPace",
-    "teamId": 3,
-    "profilePictureUrl": "p13.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174013"
-  },
-  {
-    "username": "PeterQuill",
-    "teamId": 4,
-    "profilePictureUrl": "p1.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174014"
-  },
-  {
-    "username": "QuincyAdams",
-    "teamId": 5,
-    "profilePictureUrl": "p2.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174015"
-  },
-  {
-    "username": "RachelGreen",
-    "teamId": 1,
-    "profilePictureUrl": "p3.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174016"
-  },
-  {
-    "username": "SteveJobs",
-    "teamId": 2,
-    "profilePictureUrl": "p4.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174017"
-  },
-  {
-    "username": "TinaFey",
-    "teamId": 3,
-    "profilePictureUrl": "p5.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174018"
-  },
-  {
-    "username": "UrsulaMonroe",
-    "teamId": 4,
-    "profilePictureUrl": "p6.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174019"
-  },
-  {
-    "username": "VictorHugo",
-    "teamId": 5,
-    "profilePictureUrl": "p7.jpeg",
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174020"
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174012",
+    "role": "MEMBER",
+    "isActive": true
   }
 ]

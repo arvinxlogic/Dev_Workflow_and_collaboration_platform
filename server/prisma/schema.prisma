@@ -1,12 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -14,65 +9,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  userId            Int     @id @default(autoincrement())
-  cognitoId         String  @unique
-  username          String  @unique
-  profilePictureUrl String?
-  teamId            Int?
+enum UserRole {
+  ADMIN
+  PROJECT_MANAGER
+  TEAM_LEAD
+  MEMBER
+}
 
-  authoredTasks   Task[]           @relation("TaskAuthor")
-  assignedTasks   Task[]           @relation("TaskAssignee")
-  taskAssignments TaskAssignment[]
-  attachments     Attachment[]
-  comments        Comment[]
-  team            Team?            @relation(fields: [teamId], references: [id])
+model User {
+  userId             Int       @id @default(autoincrement())
+  cognitoId          String    @unique
+  username           String    @unique
+  profilePictureUrl  String?
+  teamId             Int?
+  role               UserRole  @default(MEMBER)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  team               Team?              @relation(fields: [teamId], references: [id])
+  authoredTasks      Task[]             @relation("AuthoredTasks")
+  assignedTasks      Task[]             @relation("AssignedTasks")
+  taskAssignments    TaskAssignment[]
+  attachments        Attachment[]
+  comments           Comment[]
 }
 
 model Team {
-  id                   Int           @id @default(autoincrement())
+  id                   Int       @id @default(autoincrement())
   teamName             String
   productOwnerUserId   Int?
   projectManagerUserId Int?
+  
+  teamMembers          User[]
   projectTeams         ProjectTeam[]
-  user                 User[]
 }
 
 model Project {
-  id           Int           @id @default(autoincrement())
-  name         String
-  description  String?
-  startDate    DateTime?
-  endDate      DateTime?
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  
   tasks        Task[]
   projectTeams ProjectTeam[]
 }
 
 model ProjectTeam {
-  id        Int     @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   teamId    Int
   projectId Int
+  
   team      Team    @relation(fields: [teamId], references: [id])
   project   Project @relation(fields: [projectId], references: [id])
 }
 
 model Task {
-  id             Int       @id @default(autoincrement())
-  title          String
-  description    String?
-  status         String?
-  priority       String?
-  tags           String?
-  startDate      DateTime?
-  dueDate        DateTime?
-  points         Int?
-  projectId      Int
-  authorUserId   Int
-  assignedUserId Int?
-
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String?
+  status          String?
+  priority        String?
+  tags            String?
+  startDate       DateTime?
+  dueDate         DateTime?
+  points          Int?
+  projectId       Int
+  authorUserId    Int
+  assignedUserId  Int?
+  
   project         Project          @relation(fields: [projectId], references: [id])
-  author          User             @relation("TaskAuthor", fields: [authorUserId], references: [userId])
-  assignee        User?            @relation("TaskAssignee", fields: [assignedUserId], references: [userId])
+  author          User             @relation("AuthoredTasks", fields: [authorUserId], references: [userId])
+  assignedUser    User?            @relation("AssignedTasks", fields: [assignedUserId], references: [userId])
   taskAssignments TaskAssignment[]
   attachments     Attachment[]
   comments        Comment[]
@@ -82,20 +91,20 @@ model TaskAssignment {
   id     Int @id @default(autoincrement())
   userId Int
   taskId Int
-
-  user User @relation(fields: [userId], references: [userId])
-  task Task @relation(fields: [taskId], references: [id])
+  
+  user   User @relation(fields: [userId], references: [userId])
+  task   Task @relation(fields: [taskId], references: [id])
 }
 
 model Attachment {
-  id           Int     @id @default(autoincrement())
+  id           Int    @id @default(autoincrement())
   fileURL      String
   fileName     String?
   taskId       Int
   uploadedById Int
-
-  task       Task @relation(fields: [taskId], references: [id])
-  uploadedBy User @relation(fields: [uploadedById], references: [userId])
+  
+  task         Task @relation(fields: [taskId], references: [id])
+  uploadedBy   User @relation(fields: [uploadedById], references: [userId])
 }
 
 model Comment {
@@ -103,7 +112,7 @@ model Comment {
   text   String
   taskId Int
   userId Int
-
-  task Task @relation(fields: [taskId], references: [id])
-  user User @relation(fields: [userId], references: [userId])
+  
+  task   Task @relation(fields: [taskId], references: [id])
+  user   User @relation(fields: [userId], references: [userId])
 }

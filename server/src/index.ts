@@ -23,8 +23,8 @@ app.use(morgan("common"));
 app.use(cors({
   origin: 
   // [
-    // 'http://localhost:3000',
-    'https://main.dbfnxdceymc08.amplifyapp.com',
+    'http://localhost:3000',
+    // 'https://main.dbfnxdceymc08.amplifyapp.com',
   // ],
   // 'https://t4zf9qe6xf.execute-api.eu-north-1.amazonaws.com'
   // methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
