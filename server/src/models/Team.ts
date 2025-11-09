@@ -1,49 +1,52 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITeam extends Document {
   name: string;
   description?: string;
-  members: Array<{
+  members: {
     user: mongoose.Types.ObjectId;
-    role: 'lead' | 'member';
-  }>;
+    role: 'owner' | 'admin' | 'member';
+  }[];
   projects: mongoose.Types.ObjectId[];
-  createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const teamSchema = new Schema<ITeam>({
-  name: {
-    type: String,
-    required: [true, 'Team name is required'],
-    trim: true
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-  members: [{
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    role: {
+const TeamSchema: Schema = new Schema(
+  {
+    name: {
       type: String,
-      enum: ['lead', 'member'],
-      default: 'member'
-    }
-  }],
-  projects: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Project'
-  }],
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    members: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        role: {
+          type: String,
+          enum: ['owner', 'admin', 'member'],
+          default: 'member',
+        },
+      },
+    ],
+    projects: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Project',
+      },
+    ],
+  },
+  {
+    timestamps: true,
   }
-}, { timestamps: true });
+);
 
-export default mongoose.model<ITeam>('Team', teamSchema);
+export default mongoose.model<ITeam>('Team', TeamSchema);

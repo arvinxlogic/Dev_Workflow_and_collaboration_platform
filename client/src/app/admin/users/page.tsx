@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { User } from '@/types';
-import { Users, Shield, UserCog, Trash2, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { Users, Shield, Search, Trash2, ArrowLeft } from 'lucide-react';
 
-export default function UserManagementPage() {
+export default function AdminUsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -18,12 +17,6 @@ export default function UserManagementPage() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setCurrentUser(user);
-    
-    if (user.role !== 'admin') {
-      router.push('/dashboard');
-      return;
-    }
-    
     fetchUsers();
   }, []);
 
@@ -81,28 +74,33 @@ export default function UserManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3"
+          >
+            <ArrowLeft size={20} />
+            <span>Back to Dashboard</span>
+          </button>
+
           <div className="flex items-center gap-3">
-            <UserCog className="text-blue-600" size={32} />
+            <Users className="text-blue-600" size={32} />
             <div>
               <h1 className="text-2xl font-bold">User Management</h1>
-              <p className="text-gray-600 text-sm">Manage user roles and permissions</p>
+              <p className="text-gray-600 text-sm">Manage users and their roles</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto p-6">
-        {/* Search */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <div className="flex items-center gap-2">
             <Search size={20} className="text-gray-400" />
             <input
               type="text"
-              placeholder="Search users by name or email..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 outline-none"
@@ -110,7 +108,6 @@ export default function UserManagementPage() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-3">
@@ -147,14 +144,12 @@ export default function UserManagementPage() {
           </div>
         </div>
 
-        {/* Users Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
@@ -189,16 +184,11 @@ export default function UserManagementPage() {
                     </select>
                   </td>
                   
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {format(new Date(user.createdAt), 'MMM dd, yyyy')}
-                  </td>
-                  
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleDeleteUser(user._id)}
                       disabled={user._id === currentUser?._id}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={user._id === currentUser?._id ? "Cannot delete yourself" : "Delete user"}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -207,13 +197,6 @@ export default function UserManagementPage() {
               ))}
             </tbody>
           </table>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <Users size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600">No users found</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
