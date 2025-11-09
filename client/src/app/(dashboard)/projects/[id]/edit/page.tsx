@@ -10,7 +10,7 @@ export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
-  
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -21,7 +21,7 @@ export default function EditProjectPage() {
     priority: 'medium',
     startDate: '',
     endDate: '',
-    team: [] as string[]
+    team: [] as string[],
   });
 
   useEffect(() => {
@@ -32,12 +32,11 @@ export default function EditProjectPage() {
     try {
       const [projectRes, usersRes] = await Promise.all([
         api.get(`/projects/${projectId}`),
-        api.get('/users')
+        api.get('/users'),
       ]);
-
       const project: Project = projectRes.data;
       setUsers(usersRes.data);
-      
+
       setFormData({
         name: project.name,
         description: project.description || '',
@@ -45,7 +44,7 @@ export default function EditProjectPage() {
         priority: project.priority,
         startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
         endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
-        team: project.team || []
+        team: project.team || [],
       });
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -56,18 +55,17 @@ export default function EditProjectPage() {
   };
 
   const toggleUser = (userId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       team: prev.team.includes(userId)
-        ? prev.team.filter(id => id !== userId)
-        : [...prev.team, userId]
+        ? prev.team.filter((id) => id !== userId)
+        : [...prev.team, userId],
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await api.put(`/projects/${projectId}`, formData);
       router.push(`/projects/${projectId}`);
@@ -77,6 +75,18 @@ export default function EditProjectPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMarkCompleted = async () => {
+    setLoading(true);
+    try {
+      await api.put(`/projects/${projectId}`, { ...formData, status: 'completed' });
+      alert('Project marked as completed!');
+      router.push(`/projects/${projectId}`);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to complete project');
+    }
+    setLoading(false);
   };
 
   if (fetching) {
@@ -98,15 +108,28 @@ export default function EditProjectPage() {
             <ArrowLeft size={20} />
             <span>Back to Project</span>
           </button>
-
           <h1 className="text-2xl font-bold">Edit Project</h1>
           <p className="text-gray-600 text-sm">Update project details and team members</p>
         </div>
       </div>
 
+      {/* Mark as Completed Button */}
+      <div className="max-w-4xl mx-auto px-4 pt-6">
+        <button
+          type="button"
+          className={`bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition mr-4 ${
+            formData.status === 'completed' ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          disabled={loading || formData.status === 'completed'}
+          onClick={handleMarkCompleted}
+        >
+          {formData.status === 'completed' ? 'Project Completed' : 'Mark as Completed'}
+        </button>
+      </div>
+
       <div className="max-w-4xl mx-auto p-6">
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-          {/* Same form fields as create project... */}
+          {/* Project Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Project Name *
@@ -120,6 +143,7 @@ export default function EditProjectPage() {
             />
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Description
@@ -133,6 +157,7 @@ export default function EditProjectPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Status Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
@@ -148,6 +173,7 @@ export default function EditProjectPage() {
               </select>
             </div>
 
+            {/* Priority Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
               <select
@@ -195,6 +221,7 @@ export default function EditProjectPage() {
             </p>
           </div>
 
+          {/* Save/Cancel Buttons */}
           <div className="flex gap-4 pt-4">
             <button
               type="submit"
@@ -208,7 +235,6 @@ export default function EditProjectPage() {
                 </>
               )}
             </button>
-            
             <button
               type="button"
               onClick={() => router.push(`/projects/${projectId}`)}

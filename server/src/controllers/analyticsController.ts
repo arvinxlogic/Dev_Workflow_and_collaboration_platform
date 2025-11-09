@@ -5,6 +5,7 @@ import Project from '../models/Project';
 import User from '../models/User';
 import AuditLog from '../models/AuditLog';
 import { AuthRequest } from '../middleware/auth';
+import Team from '../models/Team';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -134,7 +135,79 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ message: error.message || 'Error fetching dashboard stats' });
   }
 };
+// GET /api/analytics/admin
+export const getAdminAnalytics = async (_req: AuthRequest, res: Response) => {
+  try {
+    const [totalProjects, activeProjects, completedProjects, onHoldProjects] = await Promise.all([
+      Project.countDocuments(),
+      Project.countDocuments({ status: 'active' }),
+      Project.countDocuments({ status: 'completed' }),
+      Project.countDocuments({ status: 'on-hold' }),
+    ]);
 
+    const [totalTasks, completedTasks, inProgressTasks, overdueTasks] = await Promise.all([
+      Task.countDocuments(),
+      Task.countDocuments({ status: 'completed' }),
+      Task.countDocuments({ status: 'in-progress' }),
+      Task.countDocuments({ dueDate: { $lt: new Date() }, status: { $ne: 'completed' } }),
+    ]);
+
+    const [totalUsers, activeUsers] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ isActive: true }),
+    ]);
+
+    const totalTeams = await Team.countDocuments();
+
+    // Calculate completion percentage:
+    const projectCompletion = totalProjects === 0 ? 0 : Math.round((completedProjects / totalProjects) * 100);
+
+    // Tasks by priority:
+    const priorities = await Task.aggregate([
+      { $group: { _id: '$priority', count: { $sum: 1 } } }
+    ]);
+    const tasksByPriority = ['urgent', 'high', 'medium', 'low'].map(priority => ({
+      priority,
+      count: priorities.find(p => p._id === priority)?.count || 0
+    }));
+
+    // Recent projects:
+    const recentProjects = await Project.find()
+      .sort({ updatedAt: -1 })
+      .limit(5)
+      .select('name status completionPercentage endDate')
+      .lean();
+
+    res.json({
+      projectStats: {
+        total: totalProjects,
+        active: activeProjects,
+        completed: completedProjects,
+        onHold: onHoldProjects,
+        completionRate: projectCompletion,
+        thisMonth: 0 // add logic if you want
+      },
+      taskStats: {
+        total: totalTasks,
+        completed: completedTasks,
+        inProgress: inProgressTasks,
+        overdue: overdueTasks,
+        onTimePercentage: 0, // add logic if you want
+        avgDuration: 0 // add logic if you want
+      },
+      userStats: {
+        total: totalUsers,
+        active: activeUsers,
+        teams: totalTeams,
+        utilization: 0 // add logic if you want
+      },
+      recentProjects,
+      tasksByPriority
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch analytics", error: err });
+  }
+};
 // Get project analytics
 export const getProjectAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

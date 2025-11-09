@@ -5,16 +5,39 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import api from '@/lib/axios';
 import { Task } from '@/types';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Calendar, User as UserIcon, AlertCircle, GripVertical, Clipboard, Rocket, Eye, CheckCircle } from 'lucide-react';
 
 const ITEM_TYPE = 'TASK';
-
 const taskStatus = ['todo', 'in-progress', 'in-review', 'completed'];
+
 const statusLabels: Record<string, string> = {
   'todo': 'To Do',
-  'in-progress': 'Work In Progress',
-  'in-review': 'Under Review',
+  'in-progress': 'In Progress',
+  'in-review': 'In Review',
   'completed': 'Completed'
+};
+
+const statusConfig: Record<string, { bg: string; border: string; icon: JSX.Element }> = {
+  'todo': { 
+    bg: 'from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800', 
+    border: 'border-slate-300 dark:border-slate-600',
+    icon: <Clipboard className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+  },
+  'in-progress': { 
+    bg: 'from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900', 
+    border: 'border-blue-300 dark:border-blue-600',
+    icon: <Rocket className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+  },
+  'in-review': { 
+    bg: 'from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900', 
+    border: 'border-amber-300 dark:border-amber-600',
+    icon: <Eye className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+  },
+  'completed': { 
+    bg: 'from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900', 
+    border: 'border-emerald-300 dark:border-emerald-600',
+    icon: <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+  }
 };
 
 interface BoardProps {
@@ -38,69 +61,98 @@ const TaskCard = ({ task, onTaskClick, onDelete, isAdmin }: TaskCardProps) => {
     }),
   });
 
-  const priorityColors = {
-    low: 'bg-gray-100 text-gray-700',
-    medium: 'bg-blue-100 text-blue-700',
-    high: 'bg-orange-100 text-orange-700',
-    urgent: 'bg-red-100 text-red-700',
+  const priorityStyles = {
+    low: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
+    medium: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700',
+    high: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-700',
+    urgent: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700',
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (!confirm('Are you sure you want to delete this task?')) return;
-    
-    if (onDelete) {
-      onDelete(task._id);
-    }
+    if (!confirm('Delete this task?')) return;
+    if (onDelete) onDelete(task._id);
   };
 
   return (
     <div
       ref={drag}
       onClick={() => onTaskClick?.(task)}
-      className={`bg-white rounded-lg p-4 mb-3 shadow-sm cursor-move hover:shadow-md transition-shadow relative group ${
-        isDragging ? 'opacity-50' : 'opacity-100'
+      className={`group relative bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer ${
+        isDragging ? 'opacity-40 scale-95 rotate-2' : 'opacity-100 hover:-translate-y-1'
       }`}
     >
-      {/* Delete button - shows on hover for admins */}
+      {/* Drag Handle */}
+      <div className="absolute left-2 top-2 opacity-0 group-hover:opacity-40 transition-opacity">
+        <GripVertical className="w-4 h-4 text-gray-400" />
+      </div>
+
+      {/* Delete Button */}
       {isAdmin && (
         <button
           onClick={handleDelete}
-          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-          title="Delete task"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
         >
-          <Trash2 size={14} />
+          <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
         </button>
       )}
 
-      <h4 className="font-medium text-sm mb-2 line-clamp-2 pr-8">{task.title}</h4>
-      
+      {/* Title */}
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-2 pr-8 text-sm leading-tight">
+        {task.title}
+      </h4>
+
+      {/* Description */}
       {task.description && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+          {task.description}
+        </p>
       )}
 
-      <div className="flex items-center justify-between">
-        <span className={`text-xs px-2 py-1 rounded ${priorityColors[task.priority]}`}>
-          {task.priority}
+      {/* Priority Badge */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${priorityStyles[task.priority]}`}>
+          {task.priority.toUpperCase()}
         </span>
+      </div>
 
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+        {/* Assignee */}
         {task.assignedTo && (
-          <div className="flex items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
               {task.assignedTo.name.charAt(0).toUpperCase()}
             </div>
+            <span className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate max-w-[80px]">
+              {task.assignedTo.name.split(' ')[0]}
+            </span>
+          </div>
+        )}
+
+        {/* Due Date */}
+        {task.dueDate && (
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
         )}
       </div>
 
+      {/* Tags */}
       {task.tags && task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {task.tags.map((tag, index) => (
-            <span key={index} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-              {tag}
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {task.tags.slice(0, 2).map((tag, index) => (
+            <span
+              key={index}
+              className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium"
+            >
+              #{tag}
             </span>
           ))}
+          {task.tags.length > 2 && (
+            <span className="text-xs text-gray-400 dark:text-gray-500">+{task.tags.length - 2}</span>
+          )}
         </div>
       )}
     </div>
@@ -130,50 +182,59 @@ const TaskColumn = ({ status, tasks, moveTask, onNewTask, onTaskClick, onDelete,
     }),
   });
 
-  const columnColors: Record<string, string> = {
-    'todo': 'bg-gray-200',
-    'in-progress': 'bg-blue-200',
-    'in-review': 'bg-yellow-200',
-    'completed': 'bg-green-200'
-  };
+  const config = statusConfig[status];
 
   return (
     <div
       ref={drop}
-      className={`flex flex-col bg-gray-50 rounded-lg p-4 min-h-[500px] ${
-        isOver ? 'ring-2 ring-blue-400' : ''
+      className={`relative flex flex-col rounded-2xl border-2 ${config.border} bg-gradient-to-b ${config.bg} p-4 min-h-[600px] transition-all ${
+        isOver ? 'ring-4 ring-blue-400 ring-opacity-50 scale-[1.02]' : ''
       }`}
     >
-      <div className="flex items-center justify-between mb-4">
+      {/* Column Header */}
+      <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${columnColors[status]}`}></div>
-          <h3 className="font-semibold text-sm">{statusLabels[status]}</h3>
-          <span className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-            {tasks.length}
-          </span>
+          <span className="text-2xl">{config.icon}</span>
+          <div>
+            <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+              {statusLabels[status]}
+            </h3>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+            </span>
+          </div>
         </div>
         
         {isAdmin && status === 'todo' && (
           <button
             onClick={onNewTask}
-            className="p-1 hover:bg-gray-200 rounded transition-colors"
-            title="Add task"
+            className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all hover:scale-110 shadow-md"
           >
-            <Plus size={18} />
+            <Plus className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      <div className="flex-1 space-y-2">
+      {/* Tasks */}
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
         {tasks.map((task) => (
-          <TaskCard 
-            key={task._id} 
-            task={task} 
+          <TaskCard
+            key={task._id}
+            task={task}
             onTaskClick={onTaskClick}
             onDelete={onDelete}
             isAdmin={isAdmin}
           />
         ))}
+        
+        {tasks.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="text-4xl mb-3 opacity-20">{config.icon}</div>
+            <p className="text-sm text-gray-400 dark:text-gray-600 font-medium">
+              No tasks yet
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -186,12 +247,10 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    // Get current user from localStorage
     const userStr = localStorage.getItem('user');
     if (userStr) {
       setCurrentUser(JSON.parse(userStr));
     }
-
     if (projectId) {
       fetchTasks();
     }
@@ -211,13 +270,11 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
   };
 
   const moveTask = async (taskId: string, toStatus: string) => {
-    // Check if user is admin
     if (currentUser?.role !== 'admin') {
       alert('Only admins can move tasks');
       return;
     }
 
-    // Optimistic update
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task._id === taskId ? { ...task, status: toStatus as any } : task
@@ -229,7 +286,6 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
     } catch (error: any) {
       console.error('Error updating task:', error);
       alert(error.response?.data?.message || 'Failed to update task');
-      // Revert on error
       fetchTasks();
     }
   };
@@ -252,19 +308,23 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8 min-h-[500px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading tasks...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-red-600 mb-4">{error}</p>
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <AlertCircle className="w-16 h-16 text-red-500" />
+        <p className="text-red-600 dark:text-red-400 text-lg">{error}</p>
         <button
           onClick={fetchTasks}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Retry
         </button>
@@ -274,25 +334,8 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6 bg-gray-100 min-h-screen">
-        {/* Role indicator */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-            }`}>
-              {isAdmin ? '👑 Admin' : '👤 User'} - {currentUser?.name}
-            </span>
-          </div>
-          
-          {!isAdmin && (
-            <div className="text-sm text-gray-600">
-              ℹ️ View-only mode. Only admins can create/edit/delete tasks.
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {taskStatus.map((status) => (
             <TaskColumn
               key={status}
@@ -306,6 +349,25 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
           ))}
         </div>
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #475569;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </DndProvider>
   );
 }

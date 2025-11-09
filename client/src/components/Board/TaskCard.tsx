@@ -36,20 +36,20 @@ export default function TaskCard({ task }: Props) {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white border border-gray-200 rounded-lg p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className="bg-white border border-gray-200 rounded-lg p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700"
     >
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-medium text-sm line-clamp-2">{task.title}</h4>
+        <h4 className="font-medium text-sm line-clamp-2 text-gray-900 dark:text-white">{task.title}</h4>
         <span className={`text-xs px-2 py-1 rounded ${priorityColors[task.priority]}`}>
-          {task.priority}
+          {task.priority.toUpperCase()}
         </span>
       </div>
 
       {task.description && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2 dark:text-gray-300">{task.description}</p>
       )}
 
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         {task.dueDate && (
           <div className="flex items-center gap-1">
             <Calendar size={14} />
@@ -68,7 +68,7 @@ export default function TaskCard({ task }: Props) {
       {task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {task.tags.map((tag, index) => (
-            <span key={index} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+            <span key={index} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded dark:bg-purple-900 dark:text-purple-300">
               {tag}
             </span>
           ))}

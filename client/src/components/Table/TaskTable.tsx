@@ -56,7 +56,7 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
           <div className="flex flex-col">
             <span className="font-medium text-sm">{row.original.title}</span>
             {row.original.description && (
-              <span className="text-xs text-gray-500 truncate max-w-md">
+              <span className="text-xs text-gray-500 truncate max-w-md dark:text-gray-400">
                 {row.original.description}
               </span>
             )}
@@ -103,7 +103,7 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
         accessorKey: 'project',
         header: 'Project',
         cell: ({ row }) => (
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 dark:text-gray-300">
             {row.original.project?.name || 'N/A'}
           </span>
         ),
@@ -112,14 +112,14 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
         accessorKey: 'dueDate',
         header: 'Due Date',
         cell: ({ row }) => (
-          <div className="flex items-center gap-1 text-sm">
+          <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-400">
             {row.original.dueDate ? (
               <>
-                <Calendar size={14} className="text-gray-500" />
+                <Calendar size={14} className="text-gray-500 dark:text-gray-400" />
                 <span>{format(new Date(row.original.dueDate), 'MMM dd, yyyy')}</span>
               </>
             ) : (
-              <span className="text-gray-400">No due date</span>
+              <span className="text-gray-400 dark:text-gray-600">No due date</span>
             )}
           </div>
         ),
@@ -130,12 +130,12 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-1">
             {row.original.tags?.slice(0, 2).map((tag, index) => (
-              <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+              <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs dark:bg-purple-900 dark:text-purple-300">
                 {tag}
               </span>
             ))}
             {row.original.tags?.length > 2 && (
-              <span className="text-xs text-gray-500">+{row.original.tags.length - 2}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">+{row.original.tags.length - 2}</span>
             )}
           </div>
         ),
@@ -169,28 +169,28 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
   return (
     <div className="w-full space-y-4">
       {/* Search */}
-      <div className="flex items-center gap-2 bg-white p-4 rounded-lg shadow-sm">
-        <Search size={20} className="text-gray-400" />
+      <div className="flex items-center gap-2 bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800">
+        <Search size={20} className="text-gray-400 dark:text-gray-500" />
         <input
           type="text"
           placeholder="Search tasks..."
           value={globalFilter ?? ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="flex-1 outline-none text-sm"
+          className="flex-1 outline-none text-sm bg-transparent text-gray-900 dark:text-gray-100"
         />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden dark:bg-gray-800">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b dark:bg-gray-700 dark:border-gray-600">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400"
                     >
                       {header.isPlaceholder ? null : (
                         <div
@@ -207,7 +207,7 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
                               ) : header.column.getIsSorted() === 'desc' ? (
                                 <ChevronDown size={16} />
                               ) : (
-                                <ChevronsUpDown size={16} className="text-gray-400" />
+                                <ChevronsUpDown size={16} className="text-gray-400 dark:text-gray-500" />
                               )}
                             </span>
                           )}
@@ -218,12 +218,12 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
                 </tr>
               ))}
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
               {table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
                   onClick={() => onTaskClick?.(row.original)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="hover:bg-gray-50 cursor-pointer transition-colors dark:hover:bg-gray-700"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
@@ -237,24 +237,24 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t">
+        <div className="flex items-center justify-between px-6 py-4 border-t dark:border-gray-700">
           <div className="flex items-center gap-2">
             <button
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm dark:hover:bg-gray-700"
             >
               Previous
             </button>
             <button
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm dark:hover:bg-gray-700"
             >
               Next
             </button>
           </div>
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 dark:text-gray-300">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </span>
         </div>
