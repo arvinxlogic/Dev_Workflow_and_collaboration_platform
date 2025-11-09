@@ -1,12 +1,19 @@
 import express from 'express';
-import { getDashboardStats, getProjectAnalytics } from '../controllers/analyticsController';
+import { getDashboardStats, getProjectAnalytics, getUserStats } from '../controllers/analyticsController';
 import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
+// All routes require authentication
 router.use(protect);
 
-router.get('/dashboard', getDashboardStats);
+// Dashboard statistics
+router.get('/dashboard-stats', getDashboardStats);
+
+// Project analytics
 router.get('/project/:projectId', getProjectAnalytics);
+
+// User statistics
+router.get('/user-stats', getUserStats);
 
 export default router;

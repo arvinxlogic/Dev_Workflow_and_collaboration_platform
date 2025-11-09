@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import Task from '../models/Task';
 import Project from '../models/Project';
 import User from '../models/User';
@@ -35,7 +36,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       
       // Tasks by status
       Task.aggregate([
-        ...(isAdmin ? [] : [{ $match: { assignedTo: userId } }]),
+        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userId as string) } }]),
         {
           $group: {
             _id: '$status',
@@ -46,7 +47,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       
       // Tasks by priority
       Task.aggregate([
-        ...(isAdmin ? [] : [{ $match: { assignedTo: userId } }]),
+        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userId as string) } }]),
         {
           $group: {
             _id: '$priority',
@@ -129,7 +130,8 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       topContributors
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ message: error.message || 'Error fetching dashboard stats' });
   }
 };
 
@@ -138,6 +140,14 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
   try {
     const { projectId } = req.params;
 
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      res.status(400).json({ message: 'Invalid project ID' });
+      return;
+    }
+
+    const projectObjectId = new mongoose.Types.ObjectId(projectId);
+
     const [
       project,
       taskStats,
@@ -145,11 +155,11 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
       avgCompletionTime,
       teamActivity
     ] = await Promise.all([
-      Project.findById(projectId).populate('team.user', 'name email'),
+      Project.findById(projectObjectId).populate('team.user', 'name email'),
       
       // Task statistics
       Task.aggregate([
-        { $match: { project: projectId } },
+        { $match: { project: projectObjectId } },
         {
           $group: {
             _id: null,
@@ -162,6 +172,9 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
             },
             todo: {
               $sum: { $cond: [{ $eq: ['$status', 'todo'] }, 1, 0] }
+            },
+            inReview: {
+              $sum: { $cond: [{ $eq: ['$status', 'in-review'] }, 1, 0] }
             },
             overdue: {
               $sum: {
@@ -183,7 +196,7 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
       
       // Completion rate over time
       Task.aggregate([
-        { $match: { project: projectId, status: 'completed' } },
+        { $match: { project: projectObjectId, status: 'completed' } },
         {
           $group: {
             _id: {
@@ -202,7 +215,7 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
       Task.aggregate([
         {
           $match: {
-            project: projectId,
+            project: projectObjectId,
             status: 'completed'
           }
         },
@@ -223,7 +236,7 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
       
       // Team member activity
       Task.aggregate([
-        { $match: { project: projectId } },
+        { $match: { project: projectObjectId } },
         {
           $group: {
             _id: '$assignedTo',
@@ -241,7 +254,12 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
             as: 'user'
           }
         },
-        { $unwind: '$user' },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        {
+          $match: {
+            user: { $exists: true }
+          }
+        },
         {
           $project: {
             name: '$user.name',
@@ -249,9 +267,15 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
             totalTasks: 1,
             completedTasks: 1,
             completionRate: {
-              $multiply: [
-                { $divide: ['$completedTasks', '$totalTasks'] },
-                100
+              $cond: [
+                { $gt: ['$totalTasks', 0] },
+                {
+                  $multiply: [
+                    { $divide: ['$completedTasks', '$totalTasks'] },
+                    100
+                  ]
+                },
+                0
               ]
             }
           }
@@ -259,14 +283,56 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
       ])
     ]);
 
+    if (!project) {
+      res.status(404).json({ message: 'Project not found' });
+      return;
+    }
+
     res.json({
       project,
-      taskStats: taskStats[0] || {},
+      taskStats: taskStats[0] || {
+        total: 0,
+        completed: 0,
+        inProgress: 0,
+        todo: 0,
+        inReview: 0,
+        overdue: 0
+      },
       completionRate,
       avgCompletionTime: avgCompletionTime[0]?.avgTime || 0,
       teamActivity
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Project analytics error:', error);
+    res.status(500).json({ message: error.message || 'Error fetching project analytics' });
+  }
+};
+
+// Get user statistics
+export const getUserStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+
+    const [totalTasks, completedTasks, inProgressTasks, overdueTasksCount] = await Promise.all([
+      Task.countDocuments({ assignedTo: userId }),
+      Task.countDocuments({ assignedTo: userId, status: 'completed' }),
+      Task.countDocuments({ assignedTo: userId, status: 'in-progress' }),
+      Task.countDocuments({
+        assignedTo: userId,
+        dueDate: { $lt: new Date() },
+        status: { $ne: 'completed' }
+      })
+    ]);
+
+    res.json({
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      overdueTasks: overdueTasksCount,
+      completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(2) : 0
+    });
+  } catch (error: any) {
+    console.error('User stats error:', error);
+    res.status(500).json({ message: error.message || 'Error fetching user statistics' });
   }
 };

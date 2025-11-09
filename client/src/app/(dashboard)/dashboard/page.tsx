@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { Project } from '@/types';
-import { FolderKanban, Plus, Users } from 'lucide-react';
+import { FolderKanban, Plus, Users, LogOut } from 'lucide-react';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -13,7 +13,6 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    // Check if user is logged in
     const userStr = localStorage.getItem('user');
     
     if (!userStr) {
@@ -34,7 +33,27 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
-      setLoading(false); // IMPORTANT: Always set loading to false
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
+
+  const handleDeleteProject = async (projectId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation to project
+    
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    try {
+      await api.delete(`/projects/${projectId}`);
+      setProjects(projects.filter(p => p._id !== projectId));
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
     }
   };
 
@@ -64,13 +83,32 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Admin Links */}
               {currentUser?.role === 'admin' && (
-                <button
-                  onClick={() => router.push('/admin/dashboard')}
-                  className="px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg font-medium transition-colors"
-                >
-                  Admin Panel
-                </button>
+                <>
+                  <button
+                    onClick={() => router.push('/admin/users')}
+                    className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                  >
+                    <Users size={18} />
+                    <span>Users</span>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/admin/teams')}
+                    className="flex items-center gap-2 px-4 py-2 text-green-600 hover:bg-green-50 rounded-lg font-medium transition-colors"
+                  >
+                    <Users size={18} />
+                    <span>Teams</span>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/admin/dashboard')}
+                    className="px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg font-medium transition-colors"
+                  >
+                    Admin Panel
+                  </button>
+                </>
               )}
               
               <button
@@ -79,6 +117,15 @@ export default function DashboardPage() {
               >
                 <Plus size={20} />
                 <span>New Project</span>
+              </button>
+
+              {/* LOGOUT BUTTON */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
               </button>
             </div>
           </div>
@@ -148,45 +195,60 @@ export default function DashboardPage() {
               {projects.map((project) => (
                 <div
                   key={project._id}
-                  onClick={() => router.push(`/projects/${project._id}`)}
-                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow relative group"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {project.name}
-                    </h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      project.status === 'active' 
-                        ? 'bg-green-100 text-green-700' 
-                        : project.status === 'completed'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {project.status}
-                    </span>
-                  </div>
-                  
-                  {project.description && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={`px-2 py-1 rounded ${
-                      project.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                      project.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                      project.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {project.priority}
-                    </span>
-                    
-                    {project.team && (
-                      <span className="text-gray-500">
-                        {project.team.length} member{project.team.length !== 1 ? 's' : ''}
+                  {/* DELETE BUTTON - Shows on hover */}
+                  <button
+                    onClick={(e) => handleDeleteProject(project._id, e)}
+                    className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete project"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+
+                  <div
+                    onClick={() => router.push(`/projects/${project._id}`)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 pr-10">
+                        {project.name}
+                      </h3>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        project.status === 'active' 
+                          ? 'bg-green-100 text-green-700' 
+                          : project.status === 'completed'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {project.status}
                       </span>
+                    </div>
+                    
+                    {project.description && (
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        {project.description}
+                      </p>
                     )}
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={`px-2 py-1 rounded ${
+                        project.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                        project.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                        project.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {project.priority}
+                      </span>
+                      
+                      {project.team && (
+                        <span className="text-gray-500">
+                          {project.team.length} member{project.team.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
