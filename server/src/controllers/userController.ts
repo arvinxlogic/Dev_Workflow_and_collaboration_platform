@@ -1,96 +1,98 @@
-import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Response } from 'express';
+import User from '../models/User';
+import { AuthRequest } from '../middleware/auth';
 
-const prisma = new PrismaClient();
-
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
+// Get all users (Admin only)
+export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const users = await prisma.user.findMany();
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving users: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const getUser = async (req: Request, res: Response): Promise<void> => {
-  const { cognitoId } = req.params;
+// Get single user
+export const getUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const user = await prisma.user.findUnique({
-      where: {
-        cognitoId: cognitoId,
-      },
-    });
+    const user = await User.findById(req.params.id)
+      .select('-password')
+      .populate('assignedTasks', 'title status priority dueDate');
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
 
     res.json(user);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving user: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const postUser = async (req: Request, res: Response): Promise<void> => {
+// Update user role (Admin only)
+export const updateUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const {
-      username,
-      cognitoId,
-      profilePictureUrl = "i1.jpg",
-      teamId = 1,
-    } = req.body;
-    const newUser = await prisma.user.create({
-      data: {
-        username,
-        cognitoId,
-        profilePictureUrl,
-        teamId,
-      },
+    const { role } = req.body;
+
+    if (!['admin', 'user'].includes(role)) {
+      res.status(400).json({ message: 'Invalid role' });
+      return;
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
     });
-    res.json({ message: "User Created Successfully", newUser });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error creating user: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
-  const { username, profilePictureUrl, teamId } = req.body;
-
+// Delete user (Admin only)
+export const deleteUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const updatedUser = await prisma.user.update({
-      where: {
-        userId: Number(userId),
-      },
-      data: {
-        ...(username && { username }),
-        ...(profilePictureUrl && { profilePictureUrl }),
-        ...(teamId !== undefined && { teamId }),
-      },
-    });
-    res.json(updatedUser);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error updating user: ${error.message}` });
-  }
-};
+    const user = await User.findById(req.params.id);
 
-export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-  const { userId } = req.params;
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
 
-  try {
-    await prisma.user.delete({
-      where: {
-        userId: Number(userId),
-      },
-    });
-    res.json({ message: "User deleted successfully" });
+    // Prevent deleting yourself
+    const currentUserId = req.user?._id;
+    
+    if (!currentUserId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    if (!user._id) {
+      res.status(500).json({ message: 'User data corrupted' });
+      return;
+    }
+
+    if (user._id.toString() === currentUserId.toString()) {
+      res.status(400).json({ message: 'Cannot delete your own account' });
+      return;
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'User deleted successfully' });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error deleting user: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };

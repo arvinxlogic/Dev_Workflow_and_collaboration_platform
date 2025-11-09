@@ -1,118 +1,138 @@
-import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Response } from 'express';
+import Project from '../models/Project';
+import { AuthRequest } from '../middleware/auth';
+import mongoose from 'mongoose';
 
-const prisma = new PrismaClient();
-
-export const getProjects = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+// Get all projects
+export const getProjects = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const projects = await prisma.project.findMany();
+    const userId = req.user?._id;
+    const isAdmin = req.user?.role === 'admin';
+
+    const query = isAdmin 
+      ? {} 
+      : { $or: [{ owner: userId }, { 'team.user': userId }] };
+
+    const projects = await Project.find(query)
+      .populate('owner', 'name email')
+      .populate('team.user', 'name email')
+      .sort({ createdAt: -1 });
+
     res.json(projects);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving projects: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const createProject = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { name, description, startDate, endDate } = req.body;
-
+// Get single project
+export const getProject = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const newProject = await prisma.project.create({
-      data: {
-        name,
-        description,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-      },
-    });
-    res.status(201).json(newProject);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error creating a project: ${error.message}` });
-  }
-};
+    const project = await Project.findById(req.params.id)
+      .populate('owner', 'name email')
+      .populate('team.user', 'name email');
 
-export const updateProject = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { projectId } = req.params;
-  const { name, description, startDate, endDate } = req.body;
-
-  try {
-    const updatedProject = await prisma.project.update({
-      where: {
-        id: Number(projectId),
-      },
-      data: {
-        ...(name && { name }),
-        ...(description !== undefined && { description }),
-        ...(startDate && { startDate: new Date(startDate) }),
-        ...(endDate && { endDate: new Date(endDate) }),
-      },
-    });
-    res.json(updatedProject);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error updating project: ${error.message}` });
-  }
-};
-
-export const deleteProject = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { projectId } = req.params;
-
-  try {
-    // Get all tasks for this project
-    const tasks = await prisma.task.findMany({
-      where: { projectId: Number(projectId) },
-    });
-
-    // Delete all related records for each task
-    for (const task of tasks) {
-      await prisma.comment.deleteMany({
-        where: { taskId: task.id },
-      });
-      await prisma.attachment.deleteMany({
-        where: { taskId: task.id },
-      });
-      await prisma.taskAssignment.deleteMany({
-        where: { taskId: task.id },
-      });
+    if (!project) {
+      res.status(404).json({ message: 'Project not found' });
+      return;
     }
 
-    // Delete all tasks
-    await prisma.task.deleteMany({
-      where: { projectId: Number(projectId) },
-    });
-
-    // Delete project teams
-    await prisma.projectTeam.deleteMany({
-      where: { projectId: Number(projectId) },
-    });
-
-    // Delete the project
-    await prisma.project.delete({
-      where: {
-        id: Number(projectId),
-      },
-    });
-
-    res.json({ message: "Project deleted successfully" });
+    res.json(project);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error deleting project: ${error.message}` });
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Create project
+export const createProject = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, description, team, startDate, endDate, priority } = req.body;
+
+    const project = await Project.create({
+      name,
+      description,
+      owner: req.user?._id,
+      team: team || [],
+      startDate,
+      endDate,
+      priority: priority || 'medium',
+      status: 'active'
+    });
+
+    const populatedProject = await Project.findById(project._id)
+      .populate('owner', 'name email')
+      .populate('team.user', 'name email');
+
+    res.status(201).json(populatedProject);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update project
+export const updateProject = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, description, team, status, startDate, endDate, priority } = req.body;
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      res.status(404).json({ message: 'Project not found' });
+      return;
+    }
+
+    // Check if user is owner or admin
+    const userId = req.user?._id;
+    const isOwner = userId && project.owner.toString() === userId.toString();
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({ message: 'Not authorized to update this project' });
+      return;
+    }
+
+    project.name = name || project.name;
+    project.description = description || project.description;
+    project.team = team || project.team;
+    project.status = status || project.status;
+    project.startDate = startDate || project.startDate;
+    project.endDate = endDate || project.endDate;
+    project.priority = priority || project.priority;
+
+    await project.save();
+
+    const updatedProject = await Project.findById(project._id)
+      .populate('owner', 'name email')
+      .populate('team.user', 'name email');
+
+    res.json(updatedProject);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete project
+export const deleteProject = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      res.status(404).json({ message: 'Project not found' });
+      return;
+    }
+
+    const userId = req.user?._id;
+    const isOwner = userId && project.owner.toString() === userId.toString();
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({ message: 'Not authorized to delete this project' });
+      return;
+    }
+
+    await Project.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
 };

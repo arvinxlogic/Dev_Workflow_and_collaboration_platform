@@ -1,268 +1,260 @@
-import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Response } from 'express';
+import Task from '../models/Task';
+import Project from '../models/Project';
+import { AuthRequest } from '../middleware/auth';
 
-const prisma = new PrismaClient();
-
-export const getTasks = async (req: Request, res: Response): Promise<void> => {
-  const { projectId } = req.query;
+// Get all tasks (filtered by project or user)
+export const getTasks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const tasks = await prisma.task.findMany({
-      where: {
-        projectId: Number(projectId),
-      },
-      include: {
-        author: true,
-        // assignedTo: true,
-        comments: {
-          include: {
-            user: true,
-          },
-          orderBy: {
-            id: "desc",
-          },
-        },
-        attachments: true,
-      },
-    });
+    const { projectId, status, assignedTo } = req.query;
+    const userId = req.user?._id;
+    const isAdmin = req.user?.role === 'admin';
+
+    let query: any = {};
+
+    if (projectId) {
+      query.project = projectId;
+    }
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (assignedTo) {
+      query.assignedTo = assignedTo;
+    }
+
+    // Non-admin users can only see their own tasks or tasks in their projects
+    if (!isAdmin) {
+      const userProjects = await Project.find({
+        $or: [{ owner: userId }, { 'team.user': userId }]
+      }).select('_id');
+
+      const projectIds = userProjects.map(p => p._id);
+      
+      query.$or = [
+        { assignedTo: userId },
+        { project: { $in: projectIds } }
+      ];
+    }
+
+    const tasks = await Task.find(query)
+      .populate('project', 'name')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+      .sort({ order: 1, createdAt: -1 });
+
     res.json(tasks);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving tasks: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const createTask = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const {
-    title,
-    description,
-    status,
-    priority,
-    tags,
-    startDate,
-    dueDate,
-    points,
-    projectId,
-    authorUserId,
-    assignedUserId,
-  } = req.body;
-
+// Get single task
+export const getTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const newTask = await prisma.task.create({
-      data: {
-        title,
-        description,
-        status,
-        priority,
-        tags,
-        startDate: startDate ? new Date(startDate) : null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        points,
-        projectId: Number(projectId),
-        authorUserId: Number(authorUserId),
-        assignedUserId: assignedUserId ? Number(assignedUserId) : null,
-      },
-      include: {
-        author: true,
-        // assignedTo: true,
-      },
-    });
-    res.status(201).json(newTask);
+    const task = await Task.findById(req.params.id)
+      .populate('project', 'name')
+      .populate('assignedTo', 'name email avatar')
+      .populate('createdBy', 'name email')
+      .populate('comments.user', 'name email avatar');
+
+    if (!task) {
+      res.status(404).json({ message: 'Task not found' });
+      return;
+    }
+
+    res.json(task);
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error creating a task: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const updateTask = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { taskId } = req.params;
-  const {
-    title,
-    description,
-    status,
-    priority,
-    tags,
-    startDate,
-    dueDate,
-    points,
-    assignedUserId,
-  } = req.body;
-
+// Create task (Admin only)
+// CREATE TASK - Fix this function
+export const createTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const updatedTask = await prisma.task.update({
-      where: {
-        id: Number(taskId),
-      },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(status && { status }),
-        ...(priority && { priority }),
-        ...(tags !== undefined && { tags }),
-        ...(startDate && { startDate: new Date(startDate) }),
-        ...(dueDate && { dueDate: new Date(dueDate) }),
-        ...(points !== undefined && { points: Number(points) }),
-        ...(assignedUserId !== undefined && {
-          assignedUserId: assignedUserId ? Number(assignedUserId) : null,
-        }),
-      },
-      include: {
-        author: true,
-        // assignedTo: true,
-        comments: {
-          include: {
-            user: true,
-          },
-        },
-      },
+    console.log('📝 Creating task with data:', req.body);
+    console.log('👤 Current user:', req.user?._id);
+
+    const {
+      title,
+      description,
+      project,
+      assignedTo,
+      status,
+      priority,
+      dueDate,
+      startDate,
+      estimatedHours,
+      tags
+    } = req.body;
+
+    // Validate required fields
+    if (!title) {
+      res.status(400).json({ message: 'Title is required' });
+      return;
+    }
+
+    if (!project) {
+      res.status(400).json({ message: 'Project is required' });
+      return;
+    }
+
+    if (!req.user?._id) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    // Get task count for ordering
+    const taskCount = await Task.countDocuments({ 
+      project, 
+      status: status || 'todo' 
     });
+
+    // Create task
+    const taskData: any = {
+      title,
+      description: description || '',
+      project,
+      status: status || 'todo',
+      priority: priority || 'medium',
+      order: taskCount,
+      createdBy: req.user._id, // Set from authenticated user
+      tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t: string) => t.trim())) : []
+    };
+
+    // Add optional fields only if provided
+    if (assignedTo) taskData.assignedTo = assignedTo;
+    if (dueDate) taskData.dueDate = new Date(dueDate);
+    if (startDate) taskData.startDate = new Date(startDate);
+    if (estimatedHours) taskData.estimatedHours = Number(estimatedHours);
+
+    console.log('💾 Saving task with data:', taskData);
+
+    const task = await Task.create(taskData);
+
+    console.log('✅ Task created:', task._id);
+
+    // Populate and return
+    const populatedTask = await Task.findById(task._id)
+      .populate('project', 'name')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email');
+
+    res.status(201).json(populatedTask);
+  } catch (error: any) {
+    console.error('❌ Create task error:', error);
+    res.status(500).json({ 
+      message: error.message || 'Failed to create task',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+};
+
+// Update task
+export const updateTask = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      res.status(404).json({ message: 'Task not found' });
+      return;
+    }
+
+    const userId = req.user?._id;
+    const isAdmin = req.user?.role === 'admin';
+    const isAssignee = userId && task.assignedTo && task.assignedTo.toString() === userId.toString();
+
+    // Regular users can only update status and actualHours
+    if (!isAdmin && isAssignee) {
+      task.status = req.body.status || task.status;
+      task.actualHours = req.body.actualHours || task.actualHours;
+    } else if (isAdmin) {
+      // Admin can update everything
+      Object.assign(task, req.body);
+    } else {
+      res.status(403).json({ message: 'Not authorized to update this task' });
+      return;
+    }
+
+    await task.save();
+
+    const updatedTask = await Task.findById(task._id)
+      .populate('project', 'name')
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email');
+
     res.json(updatedTask);
   } catch (error: any) {
-    res.status(500).json({ message: `Error updating task: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const updateTaskStatus = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { taskId } = req.params;
-  const { status } = req.body;
-
+// Update task order (for drag-and-drop)
+export const updateTaskOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const updatedTask = await prisma.task.update({
-      where: {
-        id: Number(taskId),
-      },
-      data: {
-        status: status,
-      },
-      include: {
-        author: true,
-        // assignedTo: true,
-      },
-    });
+    const { tasks } = req.body; // Array of { id, order, status }
+
+    const bulkOps = tasks.map((task: any) => ({
+      updateOne: {
+        filter: { _id: task.id },
+        update: { order: task.order, status: task.status }
+      }
+    }));
+
+    await Task.bulkWrite(bulkOps);
+
+    res.json({ message: 'Task order updated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete task (Admin only)
+export const deleteTask = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      res.status(404).json({ message: 'Task not found' });
+      return;
+    }
+
+    await Task.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete task error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// Add comment to task
+export const addComment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { text } = req.body;
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      res.status(404).json({ message: 'Task not found' });
+      return;
+    }
+
+    task.comments.push({
+      user: req.user?._id,
+      text,
+      createdAt: new Date()
+    } as any);
+
+    await task.save();
+
+    const updatedTask = await Task.findById(task._id)
+      .populate('comments.user', 'name email avatar');
+
     res.json(updatedTask);
   } catch (error: any) {
-    res.status(500).json({ message: `Error updating task: ${error.message}` });
-  }
-};
-
-export const deleteTask = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { taskId } = req.params;
-
-  try {
-    // Delete related records first
-    await prisma.comment.deleteMany({
-      where: { taskId: Number(taskId) },
-    });
-
-    await prisma.attachment.deleteMany({
-      where: { taskId: Number(taskId) },
-    });
-
-    await prisma.taskAssignment.deleteMany({
-      where: { taskId: Number(taskId) },
-    });
-
-    // Then delete the task
-    await prisma.task.delete({
-      where: {
-        id: Number(taskId),
-      },
-    });
-
-    res.json({ message: "Task deleted successfully" });
-  } catch (error: any) {
-    res.status(500).json({ message: `Error deleting task: ${error.message}` });
-  }
-};
-
-export const getUserTasks = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { userId } = req.params;
-  try {
-    const tasks = await prisma.task.findMany({
-      where: {
-        OR: [
-          { authorUserId: Number(userId) },
-          { assignedUserId: Number(userId) },
-        ],
-      },
-      include: {
-        author: true,
-        // assignedTo: true,
-        project: true,
-      },
-    });
-    res.json(tasks);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving user's tasks: ${error.message}` });
-  }
-};
-
-// COMMENT FUNCTIONALITY
-export const getTaskComments = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { taskId } = req.params;
-
-  try {
-    const comments = await prisma.comment.findMany({
-      where: {
-        taskId: Number(taskId),
-      },
-      include: {
-        user: true,
-      },
-      orderBy: {
-        id: "desc",
-      },
-    });
-    res.json(comments);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error retrieving comments: ${error.message}` });
-  }
-};
-
-export const createComment = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const { text, taskId, userId } = req.body;
-
-  try {
-    const newComment = await prisma.comment.create({
-      data: {
-        text,
-        taskId: Number(taskId),
-        userId: Number(userId),
-      },
-      include: {
-        user: true,
-      },
-    });
-    res.status(201).json(newComment);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error creating comment: ${error.message}` });
+    res.status(500).json({ message: error.message });
   }
 };

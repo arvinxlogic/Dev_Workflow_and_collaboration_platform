@@ -1,64 +1,67 @@
-import express, { Request, Response } from "express";
-import dotenv from "dotenv";
-import bodyParser from "body-parser";
-import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
+import express, { Application, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { connectDB } from './config/db';
 
-/* ROUTE IMPORTS */
-import projectRoutes from "./routes/projectRoutes";
-import taskRoutes from "./routes/taskRoutes";
-import searchRoutes from "./routes/searchRoutes";
-import userRoutes from "./routes/userRoutes";
-import teamRoutes from "./routes/teamRoutes";
+// Import routes
+import authRoutes from './routes/auth';
+import projectRoutes from './routes/projects';
+import taskRoutes from './routes/tasks';
+import teamRoutes from './routes/teams';
+import userRoutes from './routes/users';
+import auditLogRoutes from './routes/auditLogs';
+import analyticsRoutes from './routes/analytics';
 
-/* CONFIGURATIONS */
+// Load environment variables
 dotenv.config();
-const app = express();
 
-// 1. LOGGER FIRST
-app.use(morgan("common"));
+// Initialize express app
+const app: Application = express();
 
-// 2. CORS CONFIGURATION (MUST be before helmet)
+// Connect to MongoDB
+connectDB();
+// CORS Configuration - Allow frontend
 app.use(cors({
-  origin: 
-  // [
-    'http://localhost:3000',
-    // 'https://main.dbfnxdceymc08.amplifyapp.com',
-  // ],
-  // 'https://t4zf9qe6xf.execute-api.eu-north-1.amazonaws.com'
-  // methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  // allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  // optionsSuccessStatus: 204
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+  credentials: true
 }));
-
-// 3. Handle preflight OPTIONS requests
-app.options('*', cors());
-
-// 4. HELMET AFTER CORS
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-// 5. BODY PARSERS
+// Middleware
+// app.use(cors());
 app.use(express.json());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
-/* ROUTES */
-app.get("/", (req: Request, res: Response) => {
-  res.send("This is home route");
+// Health Check Route
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'OK', message: 'Server is running' });
 });
 
-app.use("/projects", projectRoutes);
-app.use("/tasks", taskRoutes);
-app.use("/search", searchRoutes);
-app.use("/users", userRoutes);
-app.use("/teams", teamRoutes);
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
-/* SERVER */
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
+// 404 Handler
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+// Global Error Handler
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
