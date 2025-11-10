@@ -49,36 +49,39 @@ export default function SettingsPage() {
   };
 
   // Handle profile update
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+const handleProfileUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const { data } = await api.put('/users/profile', {
-        name: profile.name,
-        avatar: profile.avatar,
-        age: profile.age ? parseInt(profile.age) : undefined,
-        bio: profile.bio
-      });
+  try {
+    const { data } = await api.put('/users/profile', {
+      name: profile.name,
+      avatar: profile.avatar,
+      age: profile.age ? parseInt(profile.age) : undefined,
+      bio: profile.bio
+    });
 
-      // Update localStorage
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        localStorage.setItem('user', JSON.stringify({
-          ...user,
-          name: data.name,
-          avatar: data.avatar
-        }));
-      }
-
-      showMessage('success', 'Profile updated successfully!');
-    } catch (error: any) {
-      showMessage('error', error.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setLoading(false);
+    // Update localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      localStorage.setItem('user', JSON.stringify({
+        ...user,
+        name: data.name,
+        avatar: data.avatar
+      }));
+      
+      // ✅ ADD THIS ONE LINE - Triggers navbar to refresh
+      window.dispatchEvent(new Event('profileUpdated'));
     }
-  };
+
+    showMessage('success', 'Profile updated successfully!');
+  } catch (error: any) {
+    showMessage('error', error.response?.data?.message || 'Failed to update profile');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Handle avatar URL input
   const handleAvatarChange = (url: string) => {

@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
-import { Menu, Moon, Sun, Search, User, Settings, LogOut } from "lucide-react";
+import { Menu, Moon, Sun, Search, User, LogOut } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import NotificationPanel from "../Notification/NotificationPanel";
@@ -19,12 +19,36 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Get current user
+  // ✅ ADDED: Refresh user data when page loads or localStorage changes
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
-    }
+    const loadUser = () => {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      }
+    };
+
+    loadUser();
+
+    // Listen for storage changes (when profile is updated in another tab/component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user') {
+        loadUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event when profile is updated in same tab
+    const handleProfileUpdate = () => {
+      loadUser();
+    };
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   // Close profile menu when clicking outside
@@ -47,7 +71,7 @@ const Navbar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
   };
 
-  // Get user initials
+  // ✅ UPDATED: Get user initials or show avatar
   const getUserInitials = () => {
     if (!currentUser?.name) return 'U';
     return currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -57,9 +81,6 @@ const Navbar = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // TODO: Implement search functionality
-      console.log('Searching for:', searchQuery);
-      // For now, just redirect to projects with search query
       router.push(`/projects?search=${encodeURIComponent(searchQuery)}`);
     }
   };
@@ -72,7 +93,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-gray-900 shadow-md">
+    <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-gray-800 shadow-md"> {/* ✅ FIXED: Dark mode */}
       {/* Left side */}
       <div className="flex items-center gap-8">
         {isSidebarCollapsed && (
@@ -83,13 +104,13 @@ const Navbar = () => {
         
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="relative flex items-center">
-          <Search className="absolute left-3 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 h-5 w-5 text-gray-400 dark:text-gray-500" /> {/* ✅ FIXED: Dark mode */}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search projects, tasks..."
-            className="w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            className="w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" // ✅ FIXED: Dark mode
           />
         </form>
       </div>
@@ -104,21 +125,37 @@ const Navbar = () => {
           {isDarkMode ? (
             <Sun className="h-6 w-6 text-yellow-500" />
           ) : (
-            <Moon className="h-6 w-6 text-gray-700" />
+            <Moon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
           )}
         </button>
 
         {/* Notifications */}
         <NotificationPanel />
 
-        {/* User Profile Dropdown */}
+        {/* ✅ UPDATED: User Profile with Avatar or Initials */}
         <div className="relative" ref={profileMenuRef}>
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-md"
+            className="h-9 w-9 rounded-full flex items-center justify-center font-semibold hover:opacity-90 transition-all shadow-md overflow-hidden"
             title={currentUser?.name || 'User'}
           >
-            {getUserInitials()}
+            {currentUser?.avatar ? (
+              <img 
+                src={currentUser.avatar} 
+                alt={currentUser.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  // If image fails to load, show initials
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-purple-600', 'text-white');
+                  e.currentTarget.parentElement!.innerText = getUserInitials();
+                }}
+              />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                {getUserInitials()}
+              </div>
+            )}
           </button>
 
           {/* Profile Dropdown Menu */}
@@ -126,13 +163,29 @@ const Navbar = () => {
             <div className="absolute right-0 top-12 z-50 w-56 rounded-lg bg-white shadow-xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {currentUser?.name}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {currentUser?.email}
-                </p>
-                <span className="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                <div className="flex items-center gap-3 mb-2">
+                  {/* ✅ ADDED: Avatar in dropdown */}
+                  {currentUser?.avatar ? (
+                    <img 
+                      src={currentUser.avatar} 
+                      alt={currentUser.name}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                      {getUserInitials()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate">
+                      {currentUser?.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {currentUser?.email}
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                   {currentUser?.role === 'admin' ? 'Admin' : 'User'}
                 </span>
               </div>

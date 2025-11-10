@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileText, Settings, FolderKanban } from 'lucide-react';
-import { useEffect, useState } from 'react'; // ✅ ADDED
+import { LayoutDashboard, Users, FileText, FolderKanban, UsersIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function AdminNav() {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false); // ✅ ADDED
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // ✅ ADDED: Check if user is admin
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -18,19 +17,18 @@ export default function AdminNav() {
     }
   }, []);
 
-  // ✅ ADDED: Don't render if not admin
   if (!isAdmin) return null;
 
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/projects', label: 'Projects', icon: FolderKanban },
     { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/teams', label: 'Teams', icon: UsersIcon }, // ✅ FIXED: Teams route
     { href: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-    { href: '/teams', label: 'Teams', icon: Settings },
   ];
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-white shadow-sm border-b dark:bg-gray-800 dark:border-gray-700"> {/* ✅ ADDED: Dark mode */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-1">
           {navItems.map((item) => {
@@ -43,8 +41,8 @@ export default function AdminNav() {
                 href={item.href}
                 className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                   isActive
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400' // ✅ ADDED: Dark mode active
+                    : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white' // ✅ ADDED: Dark mode hover
                 }`}
               >
                 <Icon size={18} />
