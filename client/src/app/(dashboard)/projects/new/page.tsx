@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import { User } from '@/types';
 import { ArrowLeft, Plus } from 'lucide-react';
+import { getDashboardRoute } from '@/lib/navigation';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -48,7 +49,8 @@ export default function NewProjectPage() {
 
     try {
       await api.post('/projects', formData);
-      router.push('/dashboard');
+ router.push(getDashboardRoute())
+;
     } catch (error: any) {
       console.error('Error creating project:', error);
       alert(error.response?.data?.message || 'Failed to create project');
@@ -63,7 +65,8 @@ export default function NewProjectPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(getDashboardRoute())
+}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3"
           >
             <ArrowLeft size={20} />
@@ -235,7 +238,8 @@ export default function NewProjectPage() {
             
             <button
               type="button"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push(getDashboardRoute())
+}
               className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
             >
               Cancel

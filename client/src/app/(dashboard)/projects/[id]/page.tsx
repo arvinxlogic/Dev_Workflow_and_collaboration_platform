@@ -21,6 +21,7 @@ import {
   Edit,
   Check
 } from 'lucide-react';
+import { getDashboardRoute } from '@/lib/navigation';
 
 type ViewMode = 'board' | 'table' | 'timeline';
 
@@ -126,7 +127,7 @@ export default function ProjectPage() {
             {error || 'Project not found'}
           </p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(getDashboardRoute())}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Back to Dashboard
@@ -145,7 +146,7 @@ export default function ProjectPage() {
         <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Back Button */}
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(getDashboardRoute())}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 transition-colors"
           >
             <ArrowLeft size={20} />
