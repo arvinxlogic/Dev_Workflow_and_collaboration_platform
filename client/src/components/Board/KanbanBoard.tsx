@@ -5,7 +5,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import api from '@/lib/axios';
 import { Task } from '@/types';
-import { Plus, Trash2, Calendar, User as UserIcon, AlertCircle, GripVertical, Clipboard, Rocket, Eye, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Calendar, User as UserIcon, AlertCircle, GripVertical, Clipboard, Rocket, Eye, CheckCircle, CheckCheck } from 'lucide-react';
 
 const ITEM_TYPE = 'TASK';
 const taskStatus = ['todo', 'in-progress', 'in-review', 'completed'];
@@ -17,26 +17,26 @@ const statusLabels: Record<string, string> = {
   'completed': 'Completed'
 };
 
-const statusConfig: Record<string, { bg: string; border: string; icon: JSX.Element }> = {
-  'todo': { 
-    bg: 'from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800', 
+const statusConfig: Record<string, any> = {
+  'todo': {
+    bg: 'from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800',
     border: 'border-slate-300 dark:border-slate-600',
-    icon: <Clipboard className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+    icon: <Clipboard className="h-5 w-5" />
   },
-  'in-progress': { 
-    bg: 'from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900', 
+  'in-progress': {
+    bg: 'from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900',
     border: 'border-blue-300 dark:border-blue-600',
-    icon: <Rocket className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+    icon: <Rocket className="h-5 w-5" />
   },
-  'in-review': { 
-    bg: 'from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900', 
+  'in-review': {
+    bg: 'from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900',
     border: 'border-amber-300 dark:border-amber-600',
-    icon: <Eye className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+    icon: <Eye className="h-5 w-5" />
   },
-  'completed': { 
-    bg: 'from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900', 
+  'completed': {
+    bg: 'from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900',
     border: 'border-emerald-300 dark:border-emerald-600',
-    icon: <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+    icon: <CheckCircle className="h-5 w-5" />
   }
 };
 
@@ -49,16 +49,18 @@ interface TaskCardProps {
   task: Task;
   onTaskClick?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
+  onUserMarkDone?: (taskId: string) => void;
   isAdmin: boolean;
 }
 
-const TaskCard = ({ task, onTaskClick, onDelete, isAdmin }: TaskCardProps) => {
+const TaskCard = ({ task, onTaskClick, onDelete, onUserMarkDone, isAdmin }: TaskCardProps) => {
   const [{ isDragging }, drag] = useDrag({
     type: ITEM_TYPE,
     item: { id: task._id, status: task.status },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
+    canDrag: isAdmin,
   });
 
   const priorityStyles = {
@@ -74,85 +76,146 @@ const TaskCard = ({ task, onTaskClick, onDelete, isAdmin }: TaskCardProps) => {
     if (onDelete) onDelete(task._id);
   };
 
+  // ✅ FIXED: Simple handler that calls parent function
+  const handleUserMarkDone = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onUserMarkDone) onUserMarkDone(task._id);
+  };
+
+  const isCompleted = task.status === 'completed';
+  const isUserMarkedDone = task.isUserCompleted && !isCompleted;
+
   return (
     <div
-      ref={drag}
+      ref={isAdmin ? drag : null}
       onClick={() => onTaskClick?.(task)}
-      className={`group relative bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer ${
-        isDragging ? 'opacity-40 scale-95 rotate-2' : 'opacity-100 hover:-translate-y-1'
-      }`}
+      className={`group relative bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border-2 transition-all duration-200 cursor-pointer ${
+        isUserMarkedDone 
+          ? 'border-green-400 dark:border-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50'
+          : 'border-gray-200 dark:border-gray-700'
+      } ${
+        isDragging ? 'opacity-40 scale-95 rotate-2' : 'opacity-100 hover:-translate-y-1 hover:shadow-lg'
+      } ${isCompleted ? 'opacity-60' : ''}`}
     >
-      {/* Drag Handle */}
-      <div className="absolute left-2 top-2 opacity-0 group-hover:opacity-40 transition-opacity">
-        <GripVertical className="w-4 h-4 text-gray-400" />
-      </div>
+      {/* ✅ USER COMPLETED BADGE (Top Right Corner) */}
+      {isUserMarkedDone && (
+        <div className="absolute -top-2 -right-2 z-10">
+          <div className="bg-green-500 text-white rounded-full p-2 shadow-lg border-2 border-white dark:border-gray-800 animate-bounce">
+            <CheckCheck className="h-4 w-4" />
+          </div>
+        </div>
+      )}
 
-      {/* Delete Button */}
+      {/* Drag Handle - Only for admin */}
+      {isAdmin && (
+        <div className="absolute left-2 top-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-50 transition-opacity">
+          <GripVertical className="h-5 w-5 text-gray-400" />
+        </div>
+      )}
+
+      {/* Delete Button - Only for admin */}
       {isAdmin && (
         <button
           onClick={handleDelete}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+          className="absolute right-2 top-2 p-1.5 rounded-lg bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-all z-10"
         >
-          <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+          <Trash2 className="h-4 w-4" />
         </button>
       )}
 
       {/* Title */}
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-2 pr-8 text-sm leading-tight">
+      <h4 className={`font-semibold text-gray-900 dark:text-white mb-2 pr-8 ${isCompleted ? 'line-through' : ''}`}>
         {task.title}
       </h4>
 
       {/* Description */}
       {task.description && (
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
           {task.description}
         </p>
       )}
 
       {/* Priority Badge */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${priorityStyles[task.priority]}`}>
+      <div className="mb-3">
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${priorityStyles[task.priority]}`}>
           {task.priority.toUpperCase()}
         </span>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-        {/* Assignee */}
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
         {task.assignedTo && (
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
               {task.assignedTo.name.charAt(0).toUpperCase()}
             </div>
-            <span className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate max-w-[80px]">
+            <span className="text-gray-700 dark:text-gray-300 font-medium">
               {task.assignedTo.name.split(' ')[0]}
             </span>
           </div>
         )}
 
-        {/* Due Date */}
         {task.dueDate && (
-          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <Calendar className="w-3.5 h-3.5" />
-            <span>{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className="font-medium">
+              {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
           </div>
         )}
       </div>
 
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1 mb-3">
           {task.tags.slice(0, 2).map((tag, index) => (
             <span
               key={index}
-              className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium"
+              className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
             >
               #{tag}
             </span>
           ))}
           {task.tags.length > 2 && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">+{task.tags.length - 2}</span>
+            <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
+              +{task.tags.length - 2}
+            </span>
           )}
+        </div>
+      )}
+
+      {/* ✅ USER BUTTON: Mark as Done */}
+      {!isAdmin && !isCompleted && !isUserMarkedDone && onUserMarkDone && (
+        <button
+          onClick={handleUserMarkDone}
+          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-medium rounded-lg transition-all shadow-md hover:shadow-lg"
+        >
+          <CheckCheck className="h-4 w-4" />
+          <span>Mark as Done</span>
+        </button>
+      )}
+
+      {/* ✅ USER VIEW: After marking done */}
+      {!isAdmin && isUserMarkedDone && (
+        <div className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium border-2 border-green-300 dark:border-green-600">
+          <CheckCheck className="h-4 w-4 animate-pulse" />
+          <span>Waiting for Admin Review</span>
+        </div>
+      )}
+
+      {/* ✅ ADMIN VIEW: User completed badge */}
+      {isAdmin && isUserMarkedDone && (
+        <div className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 text-green-700 dark:text-green-400 rounded-lg text-sm font-semibold border-2 border-green-400 dark:border-green-500">
+          <CheckCheck className="h-4 w-4" />
+          <span>✓ User Completed - Ready to Move</span>
+        </div>
+      )}
+
+      {/* Completed Badge */}
+      {isCompleted && (
+        <div className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-lg text-sm font-medium">
+          <CheckCircle className="h-4 w-4" />
+          <span>Completed</span>
         </div>
       )}
     </div>
@@ -166,10 +229,11 @@ interface ColumnProps {
   onNewTask: () => void;
   onTaskClick?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
+  onUserMarkDone?: (taskId: string) => void;
   isAdmin: boolean;
 }
 
-const TaskColumn = ({ status, tasks, moveTask, onNewTask, onTaskClick, onDelete, isAdmin }: ColumnProps) => {
+const TaskColumn = ({ status, tasks, moveTask, onNewTask, onTaskClick, onDelete, onUserMarkDone, isAdmin }: ColumnProps) => {
   const [{ isOver }, drop] = useDrop({
     accept: ITEM_TYPE,
     drop: (item: { id: string; status: string }) => {
@@ -180,59 +244,65 @@ const TaskColumn = ({ status, tasks, moveTask, onNewTask, onTaskClick, onDelete,
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
+    canDrop: () => isAdmin,
   });
 
   const config = statusConfig[status];
+  const userCompletedCount = tasks.filter(t => t.isUserCompleted && t.status !== 'completed').length;
 
   return (
     <div
-      ref={drop}
-      className={`relative flex flex-col rounded-2xl border-2 ${config.border} bg-gradient-to-b ${config.bg} p-4 min-h-[600px] transition-all ${
-        isOver ? 'ring-4 ring-blue-400 ring-opacity-50 scale-[1.02]' : ''
+      ref={isAdmin ? drop : null}
+      className={`flex-1 min-w-[280px] bg-gradient-to-br ${config.bg} rounded-xl p-4 border-2 ${config.border} transition-all ${
+        isOver && isAdmin ? 'ring-4 ring-blue-400 ring-opacity-50 scale-105' : ''
       }`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{config.icon}</span>
-          <div>
-            <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-              {statusLabels[status]}
-            </h3>
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+          {config.icon}
+          <h3 className="font-bold text-gray-900 dark:text-white">
+            {statusLabels[status]}
+          </h3>
+          {/* ✅ Show count of user-completed tasks for admin */}
+          {isAdmin && userCompletedCount > 0 && (
+            <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+              {userCompletedCount}
             </span>
-          </div>
+          )}
         </div>
-        
-        {isAdmin && status === 'todo' && (
-          <button
-            onClick={onNewTask}
-            className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all hover:scale-110 shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            {tasks.length}
+          </span>
+          {isAdmin && status === 'todo' && (
+            <button
+              onClick={onNewTask}
+              className="p-1.5 rounded-lg bg-white dark:bg-gray-800 text-blue-600 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+      <div className="space-y-3 min-h-[200px]">
         {tasks.map((task) => (
           <TaskCard
             key={task._id}
             task={task}
             onTaskClick={onTaskClick}
             onDelete={onDelete}
+            onUserMarkDone={onUserMarkDone}
             isAdmin={isAdmin}
           />
         ))}
-        
+
         {tasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="text-4xl mb-3 opacity-20">{config.icon}</div>
-            <p className="text-sm text-gray-400 dark:text-gray-600 font-medium">
-              No tasks yet
-            </p>
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            {config.icon}
+            <p className="mt-2 text-sm">No tasks yet</p>
           </div>
         )}
       </div>
@@ -251,6 +321,7 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
     if (userStr) {
       setCurrentUser(JSON.parse(userStr));
     }
+
     if (projectId) {
       fetchTasks();
     }
@@ -271,22 +342,59 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
 
   const moveTask = async (taskId: string, toStatus: string) => {
     if (currentUser?.role !== 'admin') {
-      alert('Only admins can move tasks');
       return;
     }
 
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
-        task._id === taskId ? { ...task, status: toStatus as any } : task
+        task._id === taskId ? { ...task, status: toStatus as any, isUserCompleted: false } : task
       )
     );
 
     try {
-      await api.put(`/tasks/${taskId}`, { status: toStatus });
+      await api.put(`/tasks/${taskId}`, { status: toStatus, isUserCompleted: false });
     } catch (error: any) {
       console.error('Error updating task:', error);
-      alert(error.response?.data?.message || 'Failed to update task');
       fetchTasks();
+    }
+  };
+
+  // ✅ CORRECT LOCATION: User marks task as done
+  const handleUserMarkDone = async (taskId: string) => {
+    // Optimistic update
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task._id === taskId ? { ...task, isUserCompleted: true, userCompletedAt: new Date().toISOString() } : task
+      )
+    );
+
+    try {
+      const response = await api.put(`/tasks/${taskId}`, { 
+        isUserCompleted: true
+      });
+      
+      console.log('✅ Task marked as done successfully:', response.data);
+      
+      // Update with actual response data
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? response.data : task
+        )
+      );
+    } catch (error: any) {
+      console.error('❌ Error marking task as done:', error);
+      console.error('❌ Error response:', error.response?.data);
+      
+      // Revert optimistic update
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === taskId ? { ...task, isUserCompleted: false, userCompletedAt: undefined } : task
+        )
+      );
+      
+      // Show specific error message
+      const errorMessage = error.response?.data?.message || 'Unable to mark task. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -308,23 +416,20 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading tasks...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-gray-600">
+        Loading tasks...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <AlertCircle className="w-16 h-16 text-red-500" />
-        <p className="text-red-600 dark:text-red-400 text-lg">{error}</p>
+      <div className="flex flex-col items-center justify-center h-64">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <p className="text-red-600 mb-4">{error}</p>
         <button
           onClick={fetchTasks}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Retry
         </button>
@@ -334,40 +439,20 @@ export default function KanbanBoard({ projectId, onNewTask }: BoardProps) {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {taskStatus.map((status) => (
-            <TaskColumn
-              key={status}
-              status={status}
-              tasks={getTasksByStatus(status)}
-              moveTask={moveTask}
-              onNewTask={onNewTask}
-              onDelete={handleDeleteTask}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {taskStatus.map((status) => (
+          <TaskColumn
+            key={status}
+            status={status}
+            tasks={getTasksByStatus(status)}
+            moveTask={moveTask}
+            onNewTask={onNewTask}
+            onDelete={handleDeleteTask}
+            onUserMarkDone={handleUserMarkDone}
+            isAdmin={isAdmin}
+          />
+        ))}
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 3px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #475569;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-      `}</style>
     </DndProvider>
   );
 }

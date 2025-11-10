@@ -33,18 +33,22 @@ export interface Task {
   _id: string;
   title: string;
   description?: string;
-  project: Project;
-  assignedTo?: User;
   status: 'todo' | 'in-progress' | 'in-review' | 'completed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: Date;
-  estimatedHours?: number;
-  actualHours?: number;
-  tags: string[];
-  createdBy: User;
+  assignedTo?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  project: string;
+  dueDate?: string;
+  tags?: string[];
+  isUserCompleted?: boolean; // ✅ ADDED
+  userCompletedAt?: string; // ✅ ADDED
   createdAt: string;
   updatedAt: string;
 }
+
 export interface Team {
   _id: string;
   name: string;

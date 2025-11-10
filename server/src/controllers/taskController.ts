@@ -31,7 +31,7 @@ export const getTasks = async (req: AuthRequest, res: Response): Promise<void> =
       }).select('_id');
 
       const projectIds = userProjects.map(p => p._id);
-      
+
       query.$or = [
         { assignedTo: userId },
         { project: { $in: projectIds } }
@@ -71,7 +71,6 @@ export const getTask = async (req: AuthRequest, res: Response): Promise<void> =>
 };
 
 // Create task (Admin only)
-// CREATE TASK - Fix this function
 export const createTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     console.log('📝 Creating task with data:', req.body);
@@ -107,9 +106,9 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // Get task count for ordering
-    const taskCount = await Task.countDocuments({ 
-      project, 
-      status: status || 'todo' 
+    const taskCount = await Task.countDocuments({
+      project,
+      status: status || 'todo'
     });
 
     // Create task
@@ -120,7 +119,7 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
       status: status || 'todo',
       priority: priority || 'medium',
       order: taskCount,
-      createdBy: req.user._id, // Set from authenticated user
+      createdBy: req.user._id,
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t: string) => t.trim())) : []
     };
 
@@ -145,14 +144,16 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
     res.status(201).json(populatedTask);
   } catch (error: any) {
     console.error('❌ Create task error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: error.message || 'Failed to create task',
       error: process.env.NODE_ENV === 'development' ? error : undefined
     });
   }
 };
 
+// ✅ UPDATED: Update task
 // Update task
+// Update task - BULLETPROOF VERSION
 export const updateTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const task = await Task.findById(req.params.id);
@@ -166,13 +167,30 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
     const isAdmin = req.user?.role === 'admin';
     const isAssignee = userId && task.assignedTo && task.assignedTo.toString() === userId.toString();
 
-    // Regular users can only update status and actualHours
-    if (!isAdmin && isAssignee) {
-      task.status = req.body.status || task.status;
-      task.actualHours = req.body.actualHours || task.actualHours;
+    // ✅ SPECIAL CASE: Anyone can mark task as user-completed
+    const isOnlyMarkingComplete = 
+      req.body.isUserCompleted !== undefined && 
+      Object.keys(req.body).length === 1;
+
+    if (isOnlyMarkingComplete) {
+      // Allow ANYONE to mark task as user-completed (no role check)
+      task.isUserCompleted = req.body.isUserCompleted;
+      if (req.body.isUserCompleted) {
+        task.userCompletedAt = new Date();
+      }
     } else if (isAdmin) {
       // Admin can update everything
       Object.assign(task, req.body);
+    } else if (isAssignee) {
+      // Assignees can update specific fields
+      if (req.body.status !== undefined) task.status = req.body.status;
+      if (req.body.actualHours !== undefined) task.actualHours = req.body.actualHours;
+      if (req.body.isUserCompleted !== undefined) {
+        task.isUserCompleted = req.body.isUserCompleted;
+        if (req.body.isUserCompleted) {
+          task.userCompletedAt = new Date();
+        }
+      }
     } else {
       res.status(403).json({ message: 'Not authorized to update this task' });
       return;
@@ -187,9 +205,11 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
 
     res.json(updatedTask);
   } catch (error: any) {
+    console.error('❌ Update task error:', error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Update task order (for drag-and-drop)
 export const updateTaskOrder = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -229,7 +249,6 @@ export const deleteTask = async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // Add comment to task
 export const addComment = async (req: AuthRequest, res: Response): Promise<void> => {

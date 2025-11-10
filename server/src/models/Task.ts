@@ -12,6 +12,8 @@ export interface ITask extends Document {
   actualHours?: number;
   tags: string[];
   order: number;
+  isUserCompleted: boolean; // ✅ ADD THIS
+  userCompletedAt?: Date; // ✅ ADD THIS
   attachments: Array<{
     name: string;
     url: string;
@@ -27,7 +29,7 @@ export interface ITask extends Document {
   updatedAt: Date;
 }
 
-const taskSchema = new Schema<ITask>({
+const taskSchema = new Schema({
   title: {
     type: String,
     required: [true, 'Task title is required'],
@@ -46,7 +48,7 @@ const taskSchema = new Schema<ITask>({
   assignedTo: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: false // Make optional
+    required: false
   },
   status: {
     type: String,
@@ -78,6 +80,15 @@ const taskSchema = new Schema<ITask>({
     type: Number,
     default: 0
   },
+  // ✅ ADD THESE FIELDS
+  isUserCompleted: {
+    type: Boolean,
+    default: false
+  },
+  userCompletedAt: {
+    type: Date,
+    required: false
+  },
   attachments: [{
     name: String,
     url: String,
@@ -99,11 +110,10 @@ const taskSchema = new Schema<ITask>({
     ref: 'User',
     required: [true, 'Creator is required']
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
-// Index for faster queries
 taskSchema.index({ project: 1, status: 1, order: 1 });
 
 export default mongoose.model<ITask>('Task', taskSchema);

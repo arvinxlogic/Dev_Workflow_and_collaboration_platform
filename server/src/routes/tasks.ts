@@ -1,49 +1,3 @@
-// import express from 'express';
-// import {
-//   getTasks,
-//   getTask,
-//   createTask,
-//   updateTask,
-//   updateTaskOrder,
-//   deleteTask,
-//   addComment
-// } from '../controllers/taskController';
-// import { protect, adminOnly } from '../middleware/auth';
-// import { auditMiddleware } from '../middleware/auditLogger';
-
-// const router = express.Router();
-
-// router.use(protect);
-// router.post('/', 
-//   adminOnly, 
-//   auditMiddleware('CREATE', 'task'),
-//   createTask
-// );
-
-// router.put('/:id',
-//   auditMiddleware('UPDATE', 'task'),
-//   updateTask
-// );
-
-// router.delete('/:id',
-//   adminOnly,
-//   auditMiddleware('DELETE', 'task'),
-//   deleteTask
-// );
-// router.route('/')
-//   .get(getTasks)
-//   .post(adminOnly, createTask);
-
-// router.put('/reorder', updateTaskOrder);
-
-// router.route('/:id')
-//   .get(getTask)
-//   .put(updateTask)
-//   .delete(adminOnly, deleteTask);
-
-// router.post('/:id/comments', addComment);
-
-// export default router;
 import express from 'express';
 import {
   getTasks,
@@ -63,9 +17,13 @@ router.use(protect);
 router.get('/', getTasks);
 router.get('/:id', getTask);
 
-// POST/PUT/DELETE - admin only
+// POST - admin only
 router.post('/', adminOnly, createTask);
-router.put('/:id', adminOnly, updateTask);
+
+// ✅ FIXED: PUT - Remove adminOnly middleware (controller handles permissions)
+router.put('/:id', updateTask);
+
+// DELETE - admin only
 router.delete('/:id', adminOnly, deleteTask);
 
 export default router;
