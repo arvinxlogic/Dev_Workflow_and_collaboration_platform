@@ -19,7 +19,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 dark:bg-gray-900">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-9xl">
         <h1 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">
           Settings
         </h1>

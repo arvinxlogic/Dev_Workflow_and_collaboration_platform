@@ -44,7 +44,18 @@ export default function EditProjectPage() {
         priority: project.priority,
         startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
         endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
-        team: project.team || [],
+        team: Array.isArray(project.team)
+          ? project.team
+              .map((member: any) => {
+                if (!member) return '';
+                if (typeof member === 'string') return member;
+                if (typeof member.user === 'string') return member.user;
+                if (member.user && typeof member.user._id === 'string') return member.user._id;
+                if (typeof member._id === 'string') return member._id;
+                return '';
+              })
+              .filter(Boolean)
+          : [],
       });
     } catch (error) {
       console.error('Error fetching data:', error);
