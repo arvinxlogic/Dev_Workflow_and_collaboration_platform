@@ -3,9 +3,23 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, FileText, Settings, FolderKanban } from 'lucide-react';
+import { useEffect, useState } from 'react'; // ✅ ADDED
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false); // ✅ ADDED
+
+  // ✅ ADDED: Check if user is admin
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setIsAdmin(user.role === 'admin');
+    }
+  }, []);
+
+  // ✅ ADDED: Don't render if not admin
+  if (!isAdmin) return null;
 
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },

@@ -20,8 +20,15 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [currentUser, setCurrentUser] = useState<any>(null); // ✅ ADDED
 
   useEffect(() => {
+    // ✅ ADDED: Get current user from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+
     fetchProjects();
   }, []);
 
@@ -79,13 +86,17 @@ export default function ProjectsPage() {
             Manage and track all your projects
           </p>
         </div>
-        <Link
-          href="/projects/new"
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          <Plus className="h-5 w-5" />
-          New Project
-        </Link>
+        
+        {/* ✅ ADDED: Conditional rendering based on user role */}
+        {currentUser?.role === 'admin' && (
+          <Link
+            href="/projects/new"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <Plus className="h-5 w-5" />
+            New Project
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -113,7 +124,9 @@ export default function ProjectsPage() {
             No projects found
           </h3>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Get started by creating your first project
+            {currentUser?.role === 'admin' 
+              ? "Get started by creating your first project" 
+              : "No projects have been assigned to you yet"}
           </p>
         </div>
       ) : (

@@ -3,7 +3,7 @@
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
 import { Menu, Moon, Sun, Bell, Search } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react"; // ✅ ADDED useState, useEffect
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -11,6 +11,15 @@ const Navbar = () => {
     (state) => state.global.isSidebarCollapsed
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const [currentUser, setCurrentUser] = useState<any>(null); // ✅ ADDED
+
+  // ✅ ADDED: Get current user
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+  }, []);
 
   const toggleDarkMode = () => {
     dispatch(setIsDarkMode(!isDarkMode));
@@ -18,6 +27,12 @@ const Navbar = () => {
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
+  };
+
+  // ✅ ADDED: Get user initials
+  const getUserInitials = () => {
+    if (!currentUser?.name) return 'U';
+    return currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   return (
@@ -61,9 +76,12 @@ const Navbar = () => {
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
         </button>
 
-        {/* User Profile */}
-        <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-          A
+        {/* ✅ UPDATED: User Profile with initials */}
+        <div 
+          className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold cursor-pointer hover:bg-blue-600 transition-colors"
+          title={currentUser?.name || 'User'}
+        >
+          {getUserInitials()}
         </div>
       </div>
     </div>

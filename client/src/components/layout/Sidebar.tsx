@@ -60,31 +60,48 @@ const Sidebar = () => {
   const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
   const [showProjects, setShowProjects] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null); // ✅ ADDED
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await axios.get("/projects");
-        setProjects(response.data || []);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      }
-    };
+    // ✅ ADDED: Get current user from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+
     fetchProjects();
   }, []);
 
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get("/projects");
+      setProjects(response.data || []);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
-      await axios.post("/auth/logout");
+      // ✅ FIXED: Properly clear localStorage and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       router.push("/login");
     } catch (error) {
       console.error("Logout error:", error);
+      // Still logout on error
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      router.push("/login");
     }
   };
 
   const sidebarClassNames = `fixed flex flex-col h-full justify-between shadow-xl transition-all duration-300 z-40 dark:bg-gray-900 overflow-y-auto bg-white ${
     isSidebarCollapsed ? "w-0 hidden" : "w-64"
   }`;
+
+  // ✅ ADDED: Check if user is admin
+  const isAdmin = currentUser?.role === 'admin';
 
   return (
     <div className={sidebarClassNames}>
@@ -106,42 +123,61 @@ const Sidebar = () => {
 
         {/* Navbar Links */}
         <nav className="z-10 w-full mt-4">
+          {/* ✅ UPDATED: Role-based dashboard route */}
           <SidebarLink
             icon={Home}
             label="Dashboard"
-            href="/admin/dashboard"
+            href={isAdmin ? "/admin/dashboard" : "/dashboard"}
             isCollapsed={isSidebarCollapsed}
           />
+          
           <SidebarLink
             icon={Briefcase}
             label="Projects"
             href="/projects"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
-            icon={BarChart3}
-            label="Analytics"
-            href="/admin/analytics"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            icon={Users}
-            label="Users"
-            href="/admin/users"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            icon={Users}
-            label="Teams"
-            href="/admin/teams"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            icon={FileText}
-            label="Audit Logs"
-            href="/admin/audit-logs"
-            isCollapsed={isSidebarCollapsed}
-          />
+          
+          {/* ✅ ADMIN ONLY: Analytics */}
+          {isAdmin && (
+            <SidebarLink
+              icon={BarChart3}
+              label="Analytics"
+              href="/admin/analytics"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          
+          {/* ✅ ADMIN ONLY: Users */}
+          {isAdmin && (
+            <SidebarLink
+              icon={Users}
+              label="Users"
+              href="/admin/users"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          
+          {/* ✅ ADMIN ONLY: Teams */}
+          {isAdmin && (
+            <SidebarLink
+              icon={Users}
+              label="Teams"
+              href="/admin/teams"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          
+          {/* ✅ ADMIN ONLY: Audit Logs */}
+          {isAdmin && (
+            <SidebarLink
+              icon={FileText}
+              label="Audit Logs"
+              href="/admin/audit-logs"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          
           <SidebarLink
             icon={Settings}
             label="Settings"

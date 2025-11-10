@@ -78,7 +78,16 @@ export default function EditProjectPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.put(`/projects/${projectId}`, formData);
+      // ✅ FIXED: Transform team array to match schema
+      const payload = {
+        ...formData,
+        team: formData.team.map(userId => ({
+          user: userId,
+          role: 'member' // Default role
+        }))
+      };
+
+      await api.put(`/projects/${projectId}`, payload);
       router.push(`/projects/${projectId}`);
     } catch (error: any) {
       console.error('Error updating project:', error);
@@ -91,7 +100,17 @@ export default function EditProjectPage() {
   const handleMarkCompleted = async () => {
     setLoading(true);
     try {
-      await api.put(`/projects/${projectId}`, { ...formData, status: 'completed' });
+      // ✅ FIXED: Transform team array to match schema
+      const payload = {
+        ...formData,
+        status: 'completed',
+        team: formData.team.map(userId => ({
+          user: userId,
+          role: 'member'
+        }))
+      };
+
+      await api.put(`/projects/${projectId}`, payload);
       alert('Project marked as completed!');
       router.push(`/projects/${projectId}`);
     } catch (error: any) {
