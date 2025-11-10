@@ -13,6 +13,14 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     const isAdmin = req.user?.role === 'admin';
     const userId = req.user?._id;
 
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    // ✅ FIX: Convert ObjectId to string
+    const userIdString = userId.toString();
+
     // Base query for non-admin users
     const userQuery = isAdmin ? {} : { $or: [{ owner: userId }, { 'team.user': userId }] };
 
@@ -37,7 +45,8 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       
       // Tasks by status
       Task.aggregate([
-        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userId as string) } }]),
+        // ✅ FIXED: Use userIdString instead of userIdstring
+        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userIdString) } }]),
         {
           $group: {
             _id: '$status',
@@ -48,7 +57,8 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       
       // Tasks by priority
       Task.aggregate([
-        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userId as string) } }]),
+        // ✅ FIXED: Use userIdString instead of userIdstring
+        ...(isAdmin ? [] : [{ $match: { assignedTo: new mongoose.Types.ObjectId(userIdString) } }]),
         {
           $group: {
             _id: '$priority',
@@ -135,8 +145,9 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ message: error.message || 'Error fetching dashboard stats' });
   }
 };
+
 // GET /api/analytics/admin
-export const getAdminAnalytics = async (_req: AuthRequest, res: Response) => {
+export const getAdminAnalytics = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     const [totalProjects, activeProjects, completedProjects, onHoldProjects] = await Promise.all([
       Project.countDocuments(),
@@ -204,10 +215,12 @@ export const getAdminAnalytics = async (_req: AuthRequest, res: Response) => {
       recentProjects,
       tasksByPriority
     });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch analytics", error: err });
+  } catch (err: any) {
+    console.error('Admin analytics error:', err);
+    res.status(500).json({ message: "Failed to fetch analytics", error: err.message });
   }
 };
+
 // Get project analytics
 export const getProjectAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -385,6 +398,11 @@ export const getProjectAnalytics = async (req: AuthRequest, res: Response): Prom
 export const getUserStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
 
     const [totalTasks, completedTasks, inProgressTasks, overdueTasksCount] = await Promise.all([
       Task.countDocuments({ assignedTo: userId }),

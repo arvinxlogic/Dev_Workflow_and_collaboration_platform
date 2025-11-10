@@ -14,6 +14,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
       
+      // ✅ FIXED: Don't select password field
       const user = await User.findById(decoded.id).select('-password');
       
       if (!user) {

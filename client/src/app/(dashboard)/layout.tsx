@@ -1,3 +1,4 @@
+import React from "react";
 import DashboardWrapper from "../dashboardWrapper";
 
 export default function DashboardLayout({

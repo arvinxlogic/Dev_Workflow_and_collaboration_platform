@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
+import Navbar from "../components/layout/Navbar";  // ✅ FIXED: Changed from layout to layouts
+import Sidebar from "../components/layout/Sidebar";
+import AdminNav from "../components/layout/AdminNav";  // ✅ Also fix this
 import StoreProvider, { useAppSelector } from "./redux";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -28,6 +29,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         }`}
       >
         <Navbar />
+        <AdminNav />
         {children}
       </main>
     </div>
