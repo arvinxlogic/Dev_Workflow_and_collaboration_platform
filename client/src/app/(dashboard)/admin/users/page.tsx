@@ -150,47 +150,55 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredUsers.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-medium">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
+          {filteredUsers.map((user) => (
+  <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+    <td className="px-6 py-4">
+      <div className="flex items-center gap-3">
+        {/* ✅ UPDATED: Show avatar or initials */}
+        {user.avatar ? (
+          <img 
+            src={user.avatar} 
+            alt={user.name}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div>
+          <p className="font-medium">{user.name}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+        </div>
+      </div>
+    </td>
+    <td className="px-6 py-4">
+      <select
+        value={user.role}
+        onChange={(e) => handleRoleChange(user._id, e.target.value as 'admin' | 'user')}
+        disabled={user._id === currentUser?._id}
+        className={`px-3 py-1 rounded-full text-sm font-medium border ${
+          user.role === 'admin'
+            ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900 dark:text-purple-300'
+            : 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300'
+        } ${user._id === currentUser?._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </td>
+    <td className="px-6 py-4">
+      <button
+        onClick={() => handleDeleteUser(user._id)}
+        disabled={user._id === currentUser?._id}
+        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded disabled:opacity-50"
+      >
+        <Trash2 size={18} />
+      </button>
+    </td>
+  </tr>
+))}
 
-                  <td className="px-6 py-4">
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user._id, e.target.value as 'admin' | 'user')}
-                      disabled={user._id === currentUser?._id}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                        user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900 dark:text-purple-300'
-                          : 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300'
-                      } ${user._id === currentUser?._id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleDeleteUser(user._id)}
-                      disabled={user._id === currentUser?._id}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded disabled:opacity-50"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>
