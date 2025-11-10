@@ -130,7 +130,7 @@ export default function EditProjectPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-9xl mx-auto px-4 py-6">
           <button
             onClick={() => router.push(`/projects/${projectId}`)}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3"
@@ -144,7 +144,7 @@ export default function EditProjectPage() {
       </div>
 
       {/* Mark as Completed Button */}
-      <div className="max-w-4xl mx-auto px-4 pt-6">
+      <div className="max-w-9xl mx-auto px-4 pt-6">
         <button
           type="button"
           className={`bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition mr-4 ${
@@ -157,7 +157,7 @@ export default function EditProjectPage() {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-9xl mx-auto p-6">
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
           {/* Project Name */}
           <div>
